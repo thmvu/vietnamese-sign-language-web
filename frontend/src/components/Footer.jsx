@@ -20,7 +20,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-6 mt-8 pt-8 border-t border-slate-50 text-center text-xs text-slate-400 font-medium">
-        © 2024 VSL Learning. Đồ án môn học - Học thủ ngữ dễ dàng.
+        © 2026 VSL Learning. Đồ án môn học - Học thủ ngữ dễ dàng.
       </div>
     </footer>
   )
