@@ -2,6 +2,12 @@ import React, { useState } from "react"
 import { Link } from "react-router-dom"
 import { register, login } from '../../services/api'
 
+// 1️⃣ IMPORT ẢNH Ở ĐÂY (Sửa đường dẫn cho đúng với máy bạn)
+// Nếu file ảnh nằm cùng cấp thư mục với file Home.js thì dùng './ten-anh.png'
+// Nếu nằm trong folder assets thì trỏ ra ngoài như bên dưới:
+import heroImg from '../../assets/hero-img.png' 
+// import logoImg from '../../assets/logo.png' // Nếu muốn thêm logo nhỏ
+
 const Home = ({ onLogin }) => {
   const [showAuth, setShowAuth] = useState(false)
   const [isRegister, setIsRegister] = useState(false)
@@ -39,7 +45,10 @@ const Home = ({ onLogin }) => {
         <div className="flex flex-col-reverse lg:flex-row items-center gap-12">
           <div className="flex flex-col gap-8 lg:w-1/2">
             <div className="inline-flex self-start items-center gap-2 px-5 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-bold border border-blue-100">
-              <span className="material-symbols-outlined text-lg">waving_hand</span>
+              <img 
+              src="logo.png" 
+              alt="Logo" 
+              className="h-11 w-11 object-contain rounded-xl shadow-lg transition-transform group-hover:scale-105 bg-white"/>
               Chào mừng bạn!
             </div>
             <h1 className="text-slate-800 text-5xl lg:text-6xl font-bold leading-tight">
@@ -58,11 +67,19 @@ const Home = ({ onLogin }) => {
           </div>
           
           <div className="lg:w-1/2">
-            <img src="https://via.placeholder.com/600x400" alt="Hero" className="w-full rounded-3xl shadow-xl" />
+            {/* 2️⃣ DÙNG BIẾN ĐÃ IMPORT VÀO SRC */}
+            {/* Thay vì src="https://via..." thì dùng src={heroImg} */}
+            <img 
+                src={heroImg} 
+                alt="Hero Illustration" 
+                className="w-full rounded-3xl shadow-xl object-cover" 
+            />
           </div>
         </div>
       </section>
 
+      {/* ... Phần code bên dưới giữ nguyên ... */}
+      
       {/* Lợi ích */}
       <section className="w-full bg-white py-20">
         <div className="max-w-7xl mx-auto px-6">
