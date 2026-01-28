@@ -1,6 +1,6 @@
-const Quiz = require('../models/Quiz');
+import Quiz from '../models/Quiz.js';
 
-const getQuizzesByLesson = async (req, res) => {
+export const getQuizzesByLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
 
@@ -21,7 +21,7 @@ const getQuizzesByLesson = async (req, res) => {
   }
 };
 
-const createQuiz = async (req, res) => {
+export const createQuiz = async (req, res) => {
   try {
     const { lesson_id, question, options, correct_answer } = req.body;
 
@@ -60,7 +60,7 @@ const createQuiz = async (req, res) => {
   }
 };
 
-const updateQuiz = async (req, res) => {
+export const updateQuiz = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -90,7 +90,7 @@ const updateQuiz = async (req, res) => {
   }
 };
 
-const deleteQuiz = async (req, res) => {
+export const deleteQuiz = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -118,9 +118,63 @@ const deleteQuiz = async (req, res) => {
   }
 };
 
-module.exports = {
-  getQuizzesByLesson,
-  createQuiz,
-  updateQuiz,
-  deleteQuiz
+export const submitQuiz = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const { answers } = req.body; // Array of { quizId, answer }
+
+    if (!answers || !Array.isArray(answers)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Answers array is required'
+      });
+    }
+
+    // Fetch all quizzes for this lesson
+    const quizzes = await Quiz.findAll({ where: { lesson_id: lessonId } });
+
+    if (quizzes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No quizzes found for this lesson'
+      });
+    }
+
+    // Check answers
+    let correctCount = 0;
+    const results = answers.map(submitted => {
+      const quiz = quizzes.find(q => q.id === submitted.quizId);
+      if (!quiz) {
+        return { quizId: submitted.quizId, correct: false, message: 'Quiz not found' };
+      }
+
+      const isCorrect = quiz.correct_answer === String(submitted.answer);
+      if (isCorrect) correctCount++;
+
+      return {
+        quizId: submitted.quizId,
+        correct: isCorrect,
+        correctAnswer: quiz.correct_answer,
+        submitted: String(submitted.answer)
+      };
+    });
+
+    const score = Math.round((correctCount / quizzes.length) * 100);
+
+    res.json({
+      success: true,
+      data: {
+        score,
+        totalQuestions: quizzes.length,
+        correctAnswers: correctCount,
+        results
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit quiz',
+      error: error.message
+    });
+  }
 };

@@ -1,19 +1,24 @@
-require('dotenv').config();
-const app = require('./app');
-const { connectDB } = require('./config/database');
+import dotenv from 'dotenv';
+import app from './app.js';
+import db from './config/database.js';
+
+dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    await connectDB();
-    
+    // Check database connection
+    const connection = await db.getConnection();
+    console.log('✅ Connection to MySQL established successfully.');
+    connection.release();
+
     app.listen(PORT, () => {
       console.log(`
 ╔════════════════════════════════════════════╗
 ║   🚀 Server Running Successfully          ║
-║   📡 Port: ${PORT}                        ║
-║   🌍 Environment: ${process.env.NODE_ENV || 'development'}       ║
+║   📡 Port: ${PORT}                           ║
+║   🌍 Environment: ${process.env.NODE_ENV || 'development'}     ║
 ║   📅 Started: ${new Date().toLocaleString()}  ║
 ╚════════════════════════════════════════════╝
       `);
@@ -24,6 +29,7 @@ const startServer = async () => {
   }
 };
 
+// Handle system errors
 process.on('unhandledRejection', (err) => {
   console.error('❌ Unhandled Rejection:', err);
   process.exit(1);

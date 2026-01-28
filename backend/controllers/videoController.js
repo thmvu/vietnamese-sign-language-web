@@ -1,12 +1,12 @@
-const Video = require('../models/Video');
+import Video from '../models/Video.js';
 
-const getVideosByLesson = async (req, res) => {
+export const getVideosByLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
 
+    // Model implementation already sorts by display_order ASC by default
     const videos = await Video.findAll({
-      where: { lesson_id: lessonId },
-      order: [['display_order', 'ASC']]
+      where: { lesson_id: lessonId }
     });
 
     res.json({
@@ -22,7 +22,7 @@ const getVideosByLesson = async (req, res) => {
   }
 };
 
-const createVideo = async (req, res) => {
+export const createVideo = async (req, res) => {
   try {
     const { lesson_id, title, video_url, duration, display_order } = req.body;
 
@@ -55,7 +55,7 @@ const createVideo = async (req, res) => {
   }
 };
 
-const updateVideo = async (req, res) => {
+export const updateVideo = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -85,7 +85,7 @@ const updateVideo = async (req, res) => {
   }
 };
 
-const deleteVideo = async (req, res) => {
+export const deleteVideo = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -111,11 +111,4 @@ const deleteVideo = async (req, res) => {
       error: error.message
     });
   }
-};
-
-module.exports = {
-  getVideosByLesson,
-  createVideo,
-  updateVideo,
-  deleteVideo
 };

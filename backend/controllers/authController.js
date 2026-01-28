@@ -1,7 +1,7 @@
-const User = require('../models/User');
-const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
+import User from '../models/User.js';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 
-const register = async (req, res) => {
+export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -13,7 +13,7 @@ const register = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ where: { email } });
-    
+
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -51,7 +51,7 @@ const register = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -103,7 +103,7 @@ const login = async (req, res) => {
   }
 };
 
-const getProfile = async (req, res) => {
+export const getProfile = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id);
 
@@ -127,7 +127,7 @@ const getProfile = async (req, res) => {
   }
 };
 
-const refreshToken = async (req, res) => {
+export const refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
@@ -170,7 +170,7 @@ const refreshToken = async (req, res) => {
   }
 };
 
-const logout = async (req, res) => {
+export const logout = async (req, res) => {
   try {
     await User.update(
       { refreshToken: null },
@@ -188,12 +188,4 @@ const logout = async (req, res) => {
       error: error.message
     });
   }
-};
-
-module.exports = {
-  register,
-  login,
-  getProfile,
-  refreshToken,
-  logout
 };

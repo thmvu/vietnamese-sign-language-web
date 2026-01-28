@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import * as videoController from '../controllers/videoController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import { checkRole } from '../middlewares/roleMiddleware.js';
+
 const router = express.Router();
-const videoController = require('../controllers/videoController');
-const authMiddleware = require('../middlewares/authMiddleware');
-const { checkRole } = require('../middlewares/roleMiddleware');
 
 router.get('/lesson/:lessonId', videoController.getVideosByLesson);
 
@@ -10,4 +11,4 @@ router.post('/', authMiddleware, checkRole('admin'), videoController.createVideo
 router.put('/:id', authMiddleware, checkRole('admin'), videoController.updateVideo);
 router.delete('/:id', authMiddleware, checkRole('admin'), videoController.deleteVideo);
 
-module.exports = router;
+export default router;

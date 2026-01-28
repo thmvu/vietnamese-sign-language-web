@@ -1,34 +1,36 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-// 1. Sửa đường dẫn import API
-import { getLessonAPI } from '../../services/mockCourses'
+import { getLesson, getLessonVideos } from '../../services/api'
 
 const LessonDetail = () => {
-  const { id } = useParams() // Lấy ID bài học từ URL
+  const { id } = useParams()
   const navigate = useNavigate()
-  
-  const [lesson, setLesson] = useState(null)
-  const [loading, setLoading] = useState(true)
 
-  // 2. Fetch dữ liệu bài học
+  const [lesson, setLesson] = useState(null)
+  const [videos, setVideos] = useState([])
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
   useEffect(() => {
-    const fetchLesson = async () => {
+    const fetchLessonData = async () => {
       setLoading(true)
       try {
-        // Gọi hàm từ mockCourses
-        const data = await getLessonAPI(id)
-        setLesson(data)
+        const [lessonData, videosData] = await Promise.all([
+          getLesson(id),
+          getLessonVideos(id)
+        ])
+        setLesson(lessonData)
+        setVideos(videosData || [])
       } catch (error) {
         console.error('Lỗi tải bài học:', error)
-        // Nếu lỗi (ví dụ id không tồn tại) thì đá về dashboard
-        alert("Không tìm thấy bài học này!")
-        navigate('/courses')
+        setError(error.message || 'Không tìm thấy bài học')
       } finally {
         setLoading(false)
       }
     }
-    fetchLesson()
-  }, [id, navigate])
+    fetchLessonData()
+  }, [id])
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center">
@@ -36,48 +38,81 @@ const LessonDetail = () => {
     </div>
   )
 
-  if (!lesson) return null
+  if (error || !lesson) return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="text-center">
+        <p className="text-red-600 mb-4">{error || 'Không tìm thấy bài học'}</p>
+        <button onClick={() => navigate('/courses')} className="bg-blue-600 text-white px-6 py-2 rounded-lg">
+          Quay lại danh sách
+        </button>
+      </div>
+    </div>
+  )
+
+  const currentVideo = videos[currentVideoIndex]
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      {/* Breadcrumb / Nút quay lại */}
-      <button 
-        onClick={() => navigate('/courses')} 
+      <button
+        onClick={() => navigate('/courses')}
         className="flex items-center text-slate-500 hover:text-blue-600 font-medium mb-6 transition-colors"
       >
         ← Quay lại danh sách khóa học
       </button>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* CỘT TRÁI: Video Player & Nội dung chính */}
         <div className="lg:col-span-2 space-y-6">
-          
-          {/* Video Player Mockup */}
-          <div className="bg-black rounded-2xl overflow-hidden shadow-xl aspect-video relative group">
-            <iframe 
-              src={lesson.videoUrl} 
-              title={lesson.title}
-              className="w-full h-full"
-              allowFullScreen
-            ></iframe>
+
+          {/* Video Player */}
+          <div className="bg-black rounded-2xl overflow-hidden shadow-xl aspect-video relative">
+            {currentVideo ? (
+              <iframe
+                src={currentVideo.video_url?.replace('watch?v=', 'embed/')}
+                title={currentVideo.title}
+                className="w-full h-full"
+                allowFullScreen
+              ></iframe>
+            ) : (
+              <div className="flex items-center justify-center h-full text-white">
+                <p>Chưa có video cho bài học này</p>
+              </div>
+            )}
           </div>
 
           <div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">{lesson.title}</h1>
-            <p className="text-slate-500">Hãy xem kỹ video và ghi nhớ các động tác tay nhé!</p>
+            <p className="text-slate-500">{lesson.description}</p>
           </div>
 
-          {/* Điều hướng bài học (Mock logic) */}
+          {/* Video Navigation */}
+          {videos.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto py-4">
+              {videos.map((video, index) => (
+                <button
+                  key={video.id}
+                  onClick={() => setCurrentVideoIndex(index)}
+                  className={`px-4 py-2 rounded-lg whitespace-nowrap ${index === currentVideoIndex
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                >
+                  {video.title}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex justify-between items-center py-6 border-t border-slate-200">
-            <button 
+            <button
               className="px-6 py-2 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-50 disabled:opacity-50"
-              disabled // Tạm thời disable nút lùi
+              onClick={() => setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1))}
+              disabled={currentVideoIndex === 0}
             >
-              Bài trước
+              Video trước
             </button>
-            
-            <Link 
-              to={`/quiz/${lesson.id}`} 
+
+            <Link
+              to={`/quiz/${lesson.id}`}
               className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg shadow-blue-200 transition-all transform hover:scale-105"
             >
               Làm bài kiểm tra →
@@ -85,28 +120,38 @@ const LessonDetail = () => {
           </div>
         </div>
 
-        {/* CỘT PHẢI: Danh sách từ vựng (Sidebar) */}
+        {/* Sidebar - Playlist hoặc thông tin */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
             <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-              📝 Từ vựng trong bài
+              📺 Danh sách video ({videos.length})
             </h3>
-            
-            <div className="space-y-3">
-              {lesson.vocab?.map((item, index) => (
-                <div key={index} className="group p-4 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors cursor-pointer border border-transparent hover:border-blue-100">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-bold text-lg text-blue-600">{item.word}</span>
-                    <span className="text-xs bg-white px-2 py-1 rounded-md text-slate-400 border border-slate-100">Click xem</span>
+
+            {videos.length === 0 ? (
+              <p className="text-slate-500 text-sm">Chưa có video nào</p>
+            ) : (
+              <div className="space-y-2">
+                {videos.map((video, index) => (
+                  <div
+                    key={video.id}
+                    onClick={() => setCurrentVideoIndex(index)}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${index === currentVideoIndex
+                        ? 'bg-blue-50 border-blue-200 border'
+                        : 'hover:bg-slate-50 border border-transparent'
+                      }`}
+                  >
+                    <p className="font-semibold text-sm">{video.title}</p>
+                    {video.duration && (
+                      <p className="text-xs text-slate-500">{Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}</p>
+                    )}
                   </div>
-                  <p className="text-sm text-slate-600 leading-relaxed">{item.meaning}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <div className="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-100">
               <p className="text-sm text-yellow-800">
-                💡 <strong>Mẹo:</strong> Bạn có thể dùng tính năng "Practice AI" để check xem mình làm đúng chưa nhé!
+                💡 <strong>Mẹo:</strong> Xem hết video để hiểu rõ hơn trước khi làm quiz nhé!
               </p>
             </div>
           </div>

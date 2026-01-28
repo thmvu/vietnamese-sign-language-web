@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import * as practiceController from '../controllers/practiceController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+
 const router = express.Router();
-const practiceController = require('../controllers/practiceController');
-const authMiddleware = require('../middlewares/authMiddleware');
 
 router.post('/evaluate', authMiddleware, practiceController.evaluatePractice);
 
-module.exports = router;
+export default router;

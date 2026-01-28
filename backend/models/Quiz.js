@@ -1,46 +1,73 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
-const Lesson = require('./Lesson');
+import db from '../config/database.js';
 
-const Quiz = sequelize.define('Quiz', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  lesson_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'lessons',
-      key: 'id'
-    }
-  },
-  question: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
-  options: {
-    type: DataTypes.JSON,
-    allowNull: false,
-    comment: 'Array of options: ["A", "B", "C", "D"]'
-  },
-  correct_answer: {
-    type: DataTypes.STRING(10),
-    allowNull: false,
-    comment: 'Index or letter of correct option'
-  },
-  deletedAt: {
-    type: DataTypes.DATE,
-    allowNull: true
+class Quiz {
+  constructor(data) {
+    this.id = data.id;
+    this.lesson_id = data.lesson_id;
+    this.question = data.question;
+    this.options = typeof data.options === 'string' ? JSON.parse(data.options) : data.options;
+    this.correct_answer = data.correct_answer;
+    this.created_at = data.createdAt || data.created_at;
+    this.updated_at = data.updatedAt || data.updated_at;
   }
-}, {
-  tableName: 'quizzes',
-  timestamps: true,
-  paranoid: true
-});
 
-Quiz.belongsTo(Lesson, { foreignKey: 'lesson_id', as: 'lesson' });
-Lesson.hasMany(Quiz, { foreignKey: 'lesson_id', as: 'quizzes' });
+  static async findAll({ where = {} } = {}) {
+    let query = 'SELECT * FROM quizzes WHERE deletedAt IS NULL';
+    const values = [];
 
-module.exports = Quiz;
+    const keys = Object.keys(where);
+    if (keys.length > 0) {
+      query += ' AND ' + keys.map(key => `${key} = ?`).join(' AND ');
+      values.push(...keys.map(key => where[key]));
+    }
+
+    const [rows] = await db.query(query, values);
+    return rows.map(row => new Quiz(row));
+  }
+
+  static async findByPk(id) {
+    const [rows] = await db.query('SELECT * FROM quizzes WHERE id = ? AND deletedAt IS NULL', [id]);
+    if (rows.length === 0) return null;
+    return new Quiz(rows[0]);
+  }
+
+  static async create(data) {
+    const { lesson_id, question, options, correct_answer } = data;
+    const optionsJson = JSON.stringify(options);
+
+    const [result] = await db.query(
+      'INSERT INTO quizzes (lesson_id, question, options, correct_answer, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
+      [lesson_id, question, optionsJson, correct_answer]
+    );
+    return Quiz.findByPk(result.insertId);
+  }
+
+  async update(data) {
+    const keys = Object.keys(data);
+    if (keys.length === 0) return this;
+
+    const updates = keys.map(key => `${key} = ?`).join(', ');
+    const values = keys.map(key => {
+      if (key === 'options' && typeof data[key] !== 'string') {
+        return JSON.stringify(data[key]);
+      }
+      return data[key];
+    });
+    values.push(this.id);
+
+    await db.query(`UPDATE quizzes SET ${updates}, updatedAt = NOW() WHERE id = ?`, values);
+
+    keys.forEach(key => this[key] = data[key]);
+    return this;
+  }
+
+  async destroy() {
+    await db.query('UPDATE quizzes SET deletedAt = NOW() WHERE id = ?', [this.id]);
+  }
+
+  toJSON() {
+    return { ...this };
+  }
+}
+
+export default Quiz;

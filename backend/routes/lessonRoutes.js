@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import * as lessonController from '../controllers/lessonController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import { checkRole } from '../middlewares/roleMiddleware.js';
+
 const router = express.Router();
-const lessonController = require('../controllers/lessonController');
-const authMiddleware = require('../middlewares/authMiddleware');
-const { checkRole } = require('../middlewares/roleMiddleware');
 
 router.get('/', lessonController.getAllLessons);
 router.get('/:id', lessonController.getLessonById);
@@ -11,4 +12,4 @@ router.post('/', authMiddleware, checkRole('admin'), lessonController.createLess
 router.put('/:id', authMiddleware, checkRole('admin'), lessonController.updateLesson);
 router.delete('/:id', authMiddleware, checkRole('admin'), lessonController.deleteLesson);
 
-module.exports = router;
+export default router;

@@ -1,8 +1,10 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const chat = async (req, res) => {
+export const chat = async (req, res) => {
   try {
     const { message, conversationHistory = [] } = req.body;
 
@@ -13,7 +15,7 @@ const chat = async (req, res) => {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const systemPrompt = `You are a helpful Vietnamese Sign Language learning assistant. 
 You help users learn sign language by:
@@ -53,15 +55,11 @@ Please respond in Vietnamese and be supportive and educational.`;
 
   } catch (error) {
     console.error('Gemini API Error:', error);
-    
+
     res.status(500).json({
       success: false,
       message: 'Chatbot service error',
       error: error.message
     });
   }
-};
-
-module.exports = {
-  chat
 };

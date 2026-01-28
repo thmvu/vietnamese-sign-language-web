@@ -1,5 +1,5 @@
-const { verifyAccessToken } = require('../utils/jwt');
-const User = require('../models/User');
+import { verifyAccessToken } from '../utils/jwt.js';
+import User from '../models/User.js';
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -13,11 +13,11 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    
+
     const decoded = verifyAccessToken(token);
-    
+
     const user = await User.findByPk(decoded.userId);
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -26,7 +26,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     req.user = {
-      id: user.id,
+      id: user.id || user.userId,
       email: user.email,
       role: user.role,
       name: user.name
@@ -42,4 +42,4 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+export default authMiddleware;

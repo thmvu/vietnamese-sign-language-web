@@ -1,6 +1,6 @@
-const axios = require('axios');
+import axios from 'axios';
 
-const evaluatePractice = async (req, res) => {
+export const evaluatePractice = async (req, res) => {
   try {
     const { landmarks } = req.body;
 
@@ -27,8 +27,8 @@ const evaluatePractice = async (req, res) => {
         predicted_sign,
         confidence,
         is_correct: confidence > 0.75,
-        feedback: confidence > 0.75 
-          ? 'Excellent! Your sign is accurate.' 
+        feedback: confidence > 0.75
+          ? 'Excellent! Your sign is accurate.'
           : 'Try again. Make sure your hand position matches the reference.'
       }
     });
@@ -48,8 +48,4 @@ const evaluatePractice = async (req, res) => {
       error: error.message
     });
   }
-};
-
-module.exports = {
-  evaluatePractice
 };
