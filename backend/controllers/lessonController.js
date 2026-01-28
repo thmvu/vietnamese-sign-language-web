@@ -75,25 +75,44 @@ export const getLessonById = async (req, res) => {
   }
 };
 
+// Admin CRUD operations
 export const createLesson = async (req, res) => {
   try {
-    const { title, description, category, level, thumbnail, display_order } = req.body;
+    const { course_id, title, description, category, level, thumbnail, display_order, video_url } = req.body;
 
-    if (!title || !category) {
+    console.log('Creating lesson:', req.body);
+
+    if (!title || !course_id) {
       return res.status(400).json({
         success: false,
-        message: 'Title and category are required'
+        message: 'Title and course_id are required'
       });
     }
 
     const lesson = await Lesson.create({
+      course_id,
       title,
       description,
-      category,
-      level,
+      category: category || 'alphabet',
+      level: level || 'beginner',
       thumbnail,
-      display_order
+      display_order: display_order || 0
     });
+
+    // Auto-create video if URL provided
+    if (video_url) {
+      try {
+        await Video.create({
+          lesson_id: lesson.id,
+          title: `Video - ${title}`,
+          video_url: video_url,
+          display_order: 0,
+          duration: 0
+        });
+      } catch (videoError) {
+        console.error('Failed to auto-create video:', videoError);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -101,6 +120,7 @@ export const createLesson = async (req, res) => {
       data: lesson
     });
   } catch (error) {
+    console.error('Create Lesson Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create lesson',

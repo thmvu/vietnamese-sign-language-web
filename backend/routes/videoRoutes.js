@@ -5,6 +5,7 @@ import { checkRole } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
+router.get('/', authMiddleware, checkRole('admin'), videoController.getAllVideos);
 router.get('/lesson/:lessonId', videoController.getVideosByLesson);
 
 router.post('/', authMiddleware, checkRole('admin'), videoController.createVideo);

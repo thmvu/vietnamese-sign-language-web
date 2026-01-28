@@ -181,6 +181,19 @@ const LessonForm = ({ lesson, courses, onClose }) => {
                         />
                     </div>
                     <div>
+                        <label className="block text-sm font-bold mb-2">Video URL (YouTube) - Tùy chọn</label>
+                        <input
+                            type="url"
+                            value={formData.video_url || ''}
+                            onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            className="w-full px-4 py-2 border rounded-lg bg-blue-50"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                            Nhập link YouTube để tự động tạo Video cho bài học này.
+                        </p>
+                    </div>
+                    <div>
                         <label className="block text-sm font-bold mb-2">Mô tả</label>
                         <textarea
                             value={formData.description}

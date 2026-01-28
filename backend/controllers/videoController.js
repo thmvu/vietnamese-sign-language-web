@@ -112,3 +112,20 @@ export const deleteVideo = async (req, res) => {
     });
   }
 };
+
+// Admin: Get all videos
+export const getAllVideos = async (req, res) => {
+  try {
+    const videos = await Video.findAll({ order: [['id', 'DESC']] });
+    res.json({
+      success: true,
+      data: videos
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch videos',
+      error: error.message
+    });
+  }
+};

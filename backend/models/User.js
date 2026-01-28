@@ -35,6 +35,27 @@ class User {
     return new User(rows[0]);
   }
 
+  static async findAll({ attributes } = {}) {
+    let select = '*';
+    // Simple attribute selection support
+    if (attributes && Array.isArray(attributes) && attributes.length > 0) {
+      // Security check to avoid SQL injection via attributes
+      const allowedAttributes = ['id', 'name', 'email', 'role', 'avatar', 'createdAt', 'updatedAt'];
+      const validAttributes = attributes.filter(attr => allowedAttributes.includes(attr));
+      if (validAttributes.length > 0) {
+        select = validAttributes.join(', ');
+      }
+    }
+
+    const [rows] = await db.query(`SELECT ${select} FROM users WHERE deletedAt IS NULL`);
+
+    // Nếu select * thì return User instances, ngược lại return POJO
+    return rows.map(row => {
+      if (select === '*') return new User(row);
+      return row;
+    });
+  }
+
   static async create(userData) {
     if (userData.password) {
       const salt = await bcrypt.genSalt(10);

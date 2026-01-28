@@ -45,12 +45,13 @@ export const register = async (userData) => {
 
 export const login = async (credentials) => {
   const response = await api.post('/auth/login', credentials);
-  // Save token and user to localStorage
-  if (response.data?.token) {
-    localStorage.setItem('token', response.data.token);
+  // response structure: { success: true, data: { user, accessToken, refreshToken } }
+
+  if (response.data?.accessToken) {
+    localStorage.setItem('token', response.data.accessToken);
     localStorage.setItem('user', JSON.stringify(response.data.user));
   }
-  return response.data;
+  return response;
 };
 
 export const logout = async () => {
