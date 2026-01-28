@@ -8,16 +8,17 @@ const Account = ({ user }) => {
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        const data = await getUserProgress(user.id)
+        const data = await getUserProgress()
         setProgress(data)
       } catch (error) {
         console.error('Lỗi tải tiến độ:', error)
+        setProgress({ completedLessons: 0, totalLessons: 0, totalPoints: 0, accuracy: 0 })
       } finally {
         setLoading(false)
       }
     }
     fetchProgress()
-  }, [user.id])
+  }, [])
 
   if (loading) return <div className="flex items-center justify-center h-screen">Đang tải...</div>
 
@@ -31,9 +32,9 @@ const Account = ({ user }) => {
           <h2 className="text-xl font-bold mb-6">Thông tin cá nhân</h2>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <img 
-                src={user?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.name)} 
-                alt="Avatar" 
+              <img
+                src={user?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.name)}
+                alt="Avatar"
                 className="w-20 h-20 rounded-full"
               />
               <div>
@@ -58,9 +59,9 @@ const Account = ({ user }) => {
                 <span className="font-bold">{progress?.completedLessons || 0} / {progress?.totalLessons || 0}</span>
               </div>
               <div className="w-full bg-slate-200 rounded-full h-3">
-                <div 
-                  className="bg-blue-600 h-3 rounded-full transition-all" 
-                  style={{width: `${(progress?.completedLessons / progress?.totalLessons * 100) || 0}%`}}
+                <div
+                  className="bg-blue-600 h-3 rounded-full transition-all"
+                  style={{ width: `${(progress?.completedLessons / progress?.totalLessons * 100) || 0}%` }}
                 ></div>
               </div>
             </div>

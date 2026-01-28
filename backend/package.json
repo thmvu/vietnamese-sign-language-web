@@ -9,6 +9,7 @@
     "dev": "nodemon server.js",
     "setup": "node scripts/setup-database.js",
     "db:seed": "node scripts/setup-database.js",
+    "update-password": "node scripts/update-admin-password.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

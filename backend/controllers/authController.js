@@ -189,3 +189,23 @@ export const logout = async (req, res) => {
     });
   }
 };
+
+// Admin only - Get all users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'name', 'email', 'role', 'avatar', 'createdAt', 'updatedAt']
+    });
+
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+};

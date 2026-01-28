@@ -1,5 +1,10 @@
 import React, { useState } from 'react'
 import { Link, Routes, Route } from 'react-router-dom'
+import CourseManagement from './CourseManagement'
+import LessonManagement from './LessonManagement'
+import VideoManagement from './VideoManagement'
+import QuizManagement from './QuizManagement'
+import UserManagement from './UserManagement'
 
 const AdminDashboard = () => {
   return (
@@ -7,16 +12,22 @@ const AdminDashboard = () => {
       <h1 className="text-3xl font-bold mb-8">🛠️ Quản trị hệ thống</h1>
 
       <div className="grid md:grid-cols-4 gap-6 mb-8">
-        <Link to="/admin/users" className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
-          <div className="text-4xl mb-2">👥</div>
-          <h3 className="font-bold text-lg mb-1">Người dùng</h3>
-          <p className="text-slate-600 text-sm">Quản lý tài khoản</p>
+        <Link to="/admin/courses" className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
+          <div className="text-4xl mb-2">📚</div>
+          <h3 className="font-bold text-lg mb-1">Khóa học</h3>
+          <p className="text-slate-600 text-sm">Quản lý khóa học</p>
         </Link>
 
         <Link to="/admin/lessons" className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
-          <div className="text-4xl mb-2">📚</div>
+          <div className="text-4xl mb-2">📖</div>
           <h3 className="font-bold text-lg mb-1">Bài học</h3>
           <p className="text-slate-600 text-sm">Quản lý nội dung</p>
+        </Link>
+
+        <Link to="/admin/videos" className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
+          <div className="text-4xl mb-2">🎥</div>
+          <h3 className="font-bold text-lg mb-1">Videos</h3>
+          <p className="text-slate-600 text-sm">Quản lý video</p>
         </Link>
 
         <Link to="/admin/quizzes" className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
@@ -25,19 +36,21 @@ const AdminDashboard = () => {
           <p className="text-slate-600 text-sm">Quản lý câu hỏi</p>
         </Link>
 
-        <Link to="/admin/stats" className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
-          <div className="text-4xl mb-2">📊</div>
-          <h3 className="font-bold text-lg mb-1">Thống kê</h3>
-          <p className="text-slate-600 text-sm">Báo cáo chi tiết</p>
+        <Link to="/admin/users" className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
+          <div className="text-4xl mb-2">👥</div>
+          <h3 className="font-bold text-lg mb-1">Người dùng</h3>
+          <p className="text-slate-600 text-sm">Quản lý tài khoản</p>
         </Link>
       </div>
 
       <div className="bg-white rounded-3xl p-8 shadow-lg">
         <Routes>
           <Route index element={<AdminHome />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="lessons" element={<AdminLessons />} />
-          <Route path="quizzes" element={<AdminQuizzes />} />
+          <Route path="courses" element={<CourseManagement />} />
+          <Route path="lessons" element={<LessonManagement />} />
+          <Route path="videos" element={<VideoManagement />} />
+          <Route path="quizzes" element={<QuizManagement />} />
+          <Route path="users" element={<UserManagement />} />
           <Route path="stats" element={<AdminStats />} />
         </Routes>
       </div>

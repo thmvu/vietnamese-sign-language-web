@@ -92,3 +92,102 @@ export const getLessonsByCourse = async (req, res) => {
         });
     }
 };
+
+// Admin CRUD operations
+export const createCourse = async (req, res) => {
+    try {
+        const { title, description, level, thumbnail, display_order } = req.body;
+
+        if (!title) {
+            return res.status(400).json({
+                success: false,
+                message: 'Title is required'
+            });
+        }
+
+        const course = await Course.create({
+            title,
+            description,
+            level: level || 'beginner',
+            thumbnail,
+            display_order: display_order || 0
+        });
+
+        res.status(201).json({
+            success: true,
+            data: course,
+            message: 'Course created successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create course',
+            error: error.message
+        });
+    }
+};
+
+export const updateCourse = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, level, thumbnail, display_order } = req.body;
+
+        const course = await Course.findByPk(id);
+
+        if (!course) {
+            return res.status(404).json({
+                success: false,
+                message: 'Course not found'
+            });
+        }
+
+        const updated = await course.update({
+            title: title || course.title,
+            description: description !== undefined ? description : course.description,
+            level: level || course.level,
+            thumbnail: thumbnail !== undefined ? thumbnail : course.thumbnail,
+            display_order: display_order !== undefined ? display_order : course.display_order
+        });
+
+        res.json({
+            success: true,
+            data: updated,
+            message: 'Course updated successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update course',
+            error: error.message
+        });
+    }
+};
+
+export const deleteCourse = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const course = await Course.findByPk(id);
+
+        if (!course) {
+            return res.status(404).json({
+                success: false,
+                message: 'Course not found'
+            });
+        }
+
+        await course.destroy();
+
+        res.json({
+            success: true,
+            message: 'Course deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete course',
+            error: error.message
+        });
+    }
+};
+
