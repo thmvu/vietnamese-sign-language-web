@@ -123,6 +123,10 @@ class User {
     return await bcrypt.compare(candidatePassword, this.password);
   }
 
+  async destroy() {
+    await db.query('UPDATE users SET deletedAt = NOW() WHERE id = ?', [this.id]);
+  }
+
   toJSON() {
     const values = { ...this };
     delete values.password;

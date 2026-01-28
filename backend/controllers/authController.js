@@ -210,3 +210,57 @@ export const getAllUsers = async (req, res) => {
     });
   }
 };
+
+// Admin CRUD
+export const createUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    // Check exist
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'Email này đã được sử dụng' });
+    }
+
+    const user = await User.create({ name, email, password, role });
+
+    res.json({ success: true, message: 'Tạo người dùng thành công', data: user.toJSON() });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi tạo người dùng', error: error.message });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, password, role } = req.body;
+
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+
+    const updates = { name, role };
+    if (email) updates.email = email;
+    if (password && password.trim()) updates.password = password;
+
+    await user.update(updates);
+
+    res.json({ success: true, message: 'Cập nhật thành công', data: user.toJSON() });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi cập nhật', error: error.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id == req.user.id) return res.status(400).json({ success: false, message: 'Không thể tự xóa chính mình' });
+
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    await user.destroy();
+    res.json({ success: true, message: 'Đã xóa người dùng' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi xóa người dùng', error: error.message });
+  }
+};
