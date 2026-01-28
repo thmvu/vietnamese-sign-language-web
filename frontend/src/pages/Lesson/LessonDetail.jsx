@@ -1,72 +1,160 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { getLesson } from '../../services/api'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { getLesson, getLessonVideos } from '../../services/api'
 
-const LessonDetail = ({ user }) => {
+const LessonDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+
   const [lesson, setLesson] = useState(null)
+  const [videos, setVideos] = useState([])
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    const fetchLesson = async () => {
+    const fetchLessonData = async () => {
+      setLoading(true)
       try {
-        const data = await getLesson(id)
-        setLesson(data)
+        const [lessonData, videosData] = await Promise.all([
+          getLesson(id),
+          getLessonVideos(id)
+        ])
+        setLesson(lessonData)
+        setVideos(videosData || [])
       } catch (error) {
         console.error('Lỗi tải bài học:', error)
+        setError(error.message || 'Không tìm thấy bài học')
       } finally {
         setLoading(false)
       }
     }
-    fetchLesson()
+    fetchLessonData()
   }, [id])
 
-  if (loading) return <div className="flex items-center justify-center h-screen">Đang tải bài học...</div>
-  if (!lesson) return <div className="text-center py-20">Không tìm thấy bài học</div>
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  )
+
+  if (error || !lesson) return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="text-center">
+        <p className="text-red-600 mb-4">{error || 'Không tìm thấy bài học'}</p>
+        <button onClick={() => navigate('/courses')} className="bg-blue-600 text-white px-6 py-2 rounded-lg">
+          Quay lại danh sách
+        </button>
+      </div>
+    </div>
+  )
+
+  const currentVideo = videos[currentVideoIndex]
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12">
-      <button onClick={() => navigate('/courses')} className="mb-6 text-blue-600 font-bold">
-        ← Quay lại danh sách
+    <div className="max-w-6xl mx-auto px-6 py-8">
+      <button
+        onClick={() => navigate('/courses')}
+        className="flex items-center text-slate-500 hover:text-blue-600 font-medium mb-6 transition-colors"
+      >
+        ← Quay lại danh sách khóa học
       </button>
 
-      <div className="bg-white rounded-3xl p-8 shadow-lg">
-        <h1 className="text-3xl font-bold mb-6">{lesson.title}</h1>
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
 
-        {/* Video Player */}
-        <div className="mb-8">
-          <div className="aspect-video bg-slate-900 rounded-2xl overflow-hidden">
-            <iframe
-              src={lesson.videoUrl}
-              className="w-full h-full"
-              allowFullScreen
-              title={lesson.title}
-            />
-          </div>
-        </div>
-
-        {/* Từ vựng */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">📝 Từ vựng trong bài</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {lesson.vocab?.map((word, i) => (
-              <div key={i} className="bg-blue-50 p-4 rounded-xl">
-                <p className="font-bold text-lg">{word.word}</p>
-                <p className="text-slate-600">{word.meaning}</p>
+          {/* Video Player */}
+          <div className="bg-black rounded-2xl overflow-hidden shadow-xl aspect-video relative">
+            {currentVideo ? (
+              <iframe
+                src={currentVideo.video_url?.replace('watch?v=', 'embed/')}
+                title={currentVideo.title}
+                className="w-full h-full"
+                allowFullScreen
+              ></iframe>
+            ) : (
+              <div className="flex items-center justify-center h-full text-white">
+                <p>Chưa có video cho bài học này</p>
               </div>
-            ))}
+            )}
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">{lesson.title}</h1>
+            <p className="text-slate-500">{lesson.description}</p>
+          </div>
+
+          {/* Video Navigation */}
+          {videos.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto py-4">
+              {videos.map((video, index) => (
+                <button
+                  key={video.id}
+                  onClick={() => setCurrentVideoIndex(index)}
+                  className={`px-4 py-2 rounded-lg whitespace-nowrap ${index === currentVideoIndex
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                >
+                  {video.title}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-between items-center py-6 border-t border-slate-200">
+            <button
+              className="px-6 py-2 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+              onClick={() => setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1))}
+              disabled={currentVideoIndex === 0}
+            >
+              Video trước
+            </button>
+
+            <Link
+              to={`/quiz/${lesson.id}`}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg shadow-blue-200 transition-all transform hover:scale-105"
+            >
+              Làm bài kiểm tra →
+            </Link>
           </div>
         </div>
 
-        {/* Nút làm Quiz */}
-        <div className="text-center">
-          <button
-            onClick={() => navigate(`/quiz/${lesson.id}`)}
-            className="px-10 py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700"
-          >
-            Làm bài kiểm tra →
-          </button>
+        {/* Sidebar - Playlist hoặc thông tin */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
+            <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+              📺 Danh sách video ({videos.length})
+            </h3>
+
+            {videos.length === 0 ? (
+              <p className="text-slate-500 text-sm">Chưa có video nào</p>
+            ) : (
+              <div className="space-y-2">
+                {videos.map((video, index) => (
+                  <div
+                    key={video.id}
+                    onClick={() => setCurrentVideoIndex(index)}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${index === currentVideoIndex
+                        ? 'bg-blue-50 border-blue-200 border'
+                        : 'hover:bg-slate-50 border border-transparent'
+                      }`}
+                  >
+                    <p className="font-semibold text-sm">{video.title}</p>
+                    {video.duration && (
+                      <p className="text-xs text-slate-500">{Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+              <p className="text-sm text-yellow-800">
+                💡 <strong>Mẹo:</strong> Xem hết video để hiểu rõ hơn trước khi làm quiz nhé!
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

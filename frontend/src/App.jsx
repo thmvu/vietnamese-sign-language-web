@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext' // 1. Gọi ông chủ mới
+
+// Import các trang
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home/Home'
-import CourseList from './pages/Course/CourseList'
+import CourseList from './pages/Course/CourseList' // Chú ý đường dẫn file này
 import LessonDetail from './pages/Lesson/LessonDetail'
 import Quiz from './pages/Quiz/Quiz'
 import Practice from './pages/Practice/Practice'
@@ -11,76 +14,59 @@ import ChatBot from './pages/ChatBot/ChatBot'
 import Account from './pages/Account/Account'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState(null)
+// Component bảo vệ (đã làm ở bước trước)
+import ProtectedRoute from './components/ProtectedRoute'
 
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-  }, [])
-
-  const handleLogin = (token, userData) => {
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(userData))
-    setIsLoggedIn(true)
-    setUser(userData)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setIsLoggedIn(false)
-    setUser(null)
-  }
+// --- COMPONENT CON: Điều hướng & Giao diện ---
+const AppRoutes = () => {
+  const { user, logout } = useAuth(); // Lấy user từ Context
 
   return (
-    <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-slate-50">
-        {isLoggedIn && <Header user={user} onLogout={handleLogout} />}
-        
-        <main className="flex-grow">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={
-              isLoggedIn ? <Navigate to="/courses" /> : <Home onLogin={handleLogin} />
-            } />
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      {/* Header nhận dữ liệu từ Context để hiển thị Avatar/Tên */}
+      {user && <Header user={user} onLogout={logout} />} 
+      
+      <main className="flex-grow">
+        <Routes>
+          {/* --- PUBLIC ROUTES --- */}
+          {/* Nếu đã có user -> tự đá sang CourseList, ngược lại hiện Home */}
+          <Route path="/" element={ user ? <Navigate to="/dashboard" /> : <Home /> } />
 
-            {/* Protected Routes */}
-            <Route path="/courses" element={
-              isLoggedIn ? <CourseList /> : <Navigate to="/" />
-            } />
-            <Route path="/lesson/:id" element={
-              isLoggedIn ? <LessonDetail user={user} /> : <Navigate to="/" />
-            } />
-            <Route path="/quiz/:lessonId" element={
-              isLoggedIn ? <Quiz user={user} /> : <Navigate to="/" />
-            } />
-            <Route path="/practice" element={
-              isLoggedIn ? <Practice /> : <Navigate to="/" />
-            } />
-            <Route path="/chatbot" element={
-              isLoggedIn ? <ChatBot /> : <Navigate to="/" />
-            } />
-            <Route path="/account" element={
-              isLoggedIn ? <Account user={user} /> : <Navigate to="/" />
-            } />
+          {/* --- PROTECTED ROUTES (Cần đăng nhập) --- */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<CourseList />} />
+            
+            {/* Truyền user vào các trang con (để code cũ của bạn không bị lỗi) */}
+            <Route path="/course/:id" element={<LessonDetail user={user} />} />
+            <Route path="/quiz/:lessonId" element={<Quiz user={user} />} />
+            <Route path="/practice" element={<Practice />} />
+            <Route path="/chatbot" element={<ChatBot />} />
+            <Route path="/account" element={<Account user={user} />} />
 
-            {/* Admin Routes */}
+            {/* Admin Route */}
             <Route path="/admin/*" element={
-              isLoggedIn && user?.role === 'admin' 
-                ? <AdminDashboard /> 
-                : <Navigate to="/" />
+              user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" />
             } />
-          </Routes>
-        </main>
+          </Route>
 
-        <Footer />
-      </div>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+
+// --- APP CHÍNH ---
+function App() {
+  return (
+    <BrowserRouter>
+      {/* Bao bọc toàn bộ App bằng AuthProvider */}
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   )
 }
