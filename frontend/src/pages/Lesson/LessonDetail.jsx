@@ -49,6 +49,21 @@ const LessonDetail = () => {
     </div>
   )
 
+  const getYoutubeEmbedUrl = (url) => {
+    if (!url) return '';
+    let videoId = '';
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2].length === 11) {
+      videoId = match[2];
+    } else {
+      // Fallback if regex fails but it's a simple link
+      if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+      else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  };
+
   const currentVideo = videos[currentVideoIndex]
 
   return (
@@ -67,7 +82,7 @@ const LessonDetail = () => {
           <div className="bg-black rounded-2xl overflow-hidden shadow-xl aspect-video relative">
             {currentVideo ? (
               <iframe
-                src={currentVideo.video_url?.replace('watch?v=', 'embed/')}
+                src={getYoutubeEmbedUrl(currentVideo.video_url)}
                 title={currentVideo.title}
                 className="w-full h-full"
                 allowFullScreen
@@ -92,8 +107,8 @@ const LessonDetail = () => {
                   key={video.id}
                   onClick={() => setCurrentVideoIndex(index)}
                   className={`px-4 py-2 rounded-lg whitespace-nowrap ${index === currentVideoIndex
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                 >
                   {video.title}
@@ -136,8 +151,8 @@ const LessonDetail = () => {
                     key={video.id}
                     onClick={() => setCurrentVideoIndex(index)}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${index === currentVideoIndex
-                        ? 'bg-blue-50 border-blue-200 border'
-                        : 'hover:bg-slate-50 border border-transparent'
+                      ? 'bg-blue-50 border-blue-200 border'
+                      : 'hover:bg-slate-50 border border-transparent'
                       }`}
                   >
                     <p className="font-semibold text-sm">{video.title}</p>

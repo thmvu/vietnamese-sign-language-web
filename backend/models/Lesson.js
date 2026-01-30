@@ -4,6 +4,7 @@ class Lesson {
   constructor(data) {
     this.id = data.id;
     this.course_id = data.course_id;
+    this.quiz_set_id = data.quiz_set_id;
     this.title = data.title;
     this.description = data.description;
     this.category = data.category;
@@ -63,10 +64,10 @@ class Lesson {
   }
 
   static async create(data) {
-    const { course_id, title, description, category, level, thumbnail, display_order } = data;
+    const { course_id, quiz_set_id, title, description, category, level, thumbnail, display_order } = data;
     const [result] = await db.query(
-      'INSERT INTO lessons (course_id, title, description, category, level, thumbnail, display_order, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
-      [course_id, title, description, category, level || 'beginner', thumbnail, display_order || 0]
+      'INSERT INTO lessons (course_id, quiz_set_id, title, description, category, level, thumbnail, display_order, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      [course_id, quiz_set_id, title, description, category, level || 'beginner', thumbnail, display_order || 0]
     );
     return Lesson.findByPk(result.insertId);
   }

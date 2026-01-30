@@ -17,32 +17,38 @@ export const chat = async (req, res) => {
 
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-    const systemPrompt = `You are a helpful Vietnamese Sign Language learning assistant. 
-You help users learn sign language by:
-- Answering questions about sign language
-- Providing tips and guidance
-- Explaining signs and gestures
-- Encouraging learners
-Please respond in Vietnamese and be supportive and educational.`;
+    const instructions = `Bạn là trợ lý AI cho website học Ngôn ngữ Ký hiệu Việt Nam.
+Trả lời ngắn gọn, dễ hiểu, thân thiện. 
+Dùng tiếng Việt tự nhiên. 
+Nếu câu hỏi liên quan đến bài học, hãy gợi ý người dùng vào mục "Khóa học".`;
 
-    const chat = model.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: systemPrompt }]
-        },
-        {
-          role: 'model',
-          parts: [{ text: 'Xin chào! Tôi là trợ lý học Thủ ngữ Việt Nam. Tôi sẵn sàng giúp bạn học và thực hành thủ ngữ.' }]
-        },
-        ...conversationHistory.map(msg => ({
-          role: msg.role,
-          parts: [{ text: msg.content }]
-        }))
-      ]
+    // Map and filter history to ensure it's valid for Gemini
+    // Rules: Must alternate user/model. Must start with user.
+    let history = [];
+
+    // Initial context
+    history.push({ role: 'user', parts: [{ text: instructions }] });
+    history.push({ role: 'model', parts: [{ text: 'Đã hiểu. Tôi là trợ lý học Thủ ngữ Việt Nam, tôi đã sẵn sàng!' }] });
+
+    // Append history from frontend, ensuring we don't break alternating roles
+    if (Array.isArray(conversationHistory)) {
+      conversationHistory.forEach((msg, index) => {
+        const role = msg.role === 'user' ? 'user' : 'model';
+        // Only push if it alternates from the last one
+        if (history.length === 0 || history[history.length - 1].role !== role) {
+          history.push({
+            role: role,
+            parts: [{ text: msg.content }]
+          });
+        }
+      });
+    }
+
+    const chatSession = model.startChat({
+      history: history,
     });
 
-    const result = await chat.sendMessage(message);
+    const result = await chatSession.sendMessage(message);
     const response = result.response.text();
 
     res.json({
@@ -54,11 +60,14 @@ Please respond in Vietnamese and be supportive and educational.`;
     });
 
   } catch (error) {
-    console.error('Gemini API Error:', error);
+    console.error('--- Gemini API Error Details ---');
+    console.error('Message:', error.message);
+    if (error.stack) console.error('Stack:', error.stack);
+    console.error('---------------------------------');
 
     res.status(500).json({
       success: false,
-      message: 'Chatbot service error',
+      message: 'Chatbot service error: ' + error.message,
       error: error.message
     });
   }

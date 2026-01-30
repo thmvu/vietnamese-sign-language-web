@@ -130,6 +130,26 @@ const LessonForm = ({ lesson, courses, onClose }) => {
     });
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        if (lesson) {
+            fetchLessonVideo();
+        }
+    }, [lesson]);
+
+    const fetchLessonVideo = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API_URL}/videos/lesson/${lesson.id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.success && res.data.data.length > 0) {
+                setFormData(prev => ({ ...prev, video_url: res.data.data[0].video_url }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch video:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);

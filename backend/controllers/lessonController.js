@@ -57,7 +57,14 @@ export const getLessonById = async (req, res) => {
 
     // Fetch related videos and quizzes
     const videos = await Video.findAll({ where: { lesson_id: id } });
-    const quizzes = await Quiz.findAll({ where: { lesson_id: id } });
+
+    // Quiz Set Logic: Priority to assigned set
+    let quizzes = [];
+    if (lesson.quiz_set_id) {
+      quizzes = await Quiz.findAll({ where: { quiz_set_id: lesson.quiz_set_id } });
+    } else {
+      quizzes = await Quiz.findAll({ where: { lesson_id: id } });
+    }
 
     lesson.videos = videos;
     lesson.quizzes = quizzes;
@@ -132,7 +139,7 @@ export const createLesson = async (req, res) => {
 export const updateLesson = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const { video_url, ...lessonUpdates } = req.body;
 
     const lesson = await Lesson.findByPk(id);
 
@@ -143,7 +150,26 @@ export const updateLesson = async (req, res) => {
       });
     }
 
-    await lesson.update(updates);
+    // 1. Update Lesson fields
+    await lesson.update(lessonUpdates);
+
+    // 2. Update Video if video_url is provided
+    if (video_url !== undefined) {
+      const existingVideos = await Video.findAll({ where: { lesson_id: id } });
+      if (existingVideos.length > 0) {
+        // Update first video
+        await existingVideos[0].update({ video_url });
+      } else if (video_url) {
+        // Create new video if none existed
+        await Video.create({
+          lesson_id: id,
+          title: `Video - ${lesson.title}`,
+          video_url,
+          display_order: 0,
+          duration: 0
+        });
+      }
+    }
 
     res.json({
       success: true,
