@@ -57,10 +57,45 @@ export const getLessonById = async (req, res) => {
 
     // Fetch related videos and quizzes
     const videos = await Video.findAll({ where: { lesson_id: id } });
-    const quizzes = await Quiz.findAll({ where: { lesson_id: id } });
+
+    // Quiz Set Logic: Priority to assigned set
+    let quizzes = [];
+    if (lesson.quiz_set_id) {
+      quizzes = await Quiz.findAll({ where: { quiz_set_id: lesson.quiz_set_id } });
+    } else {
+      quizzes = await Quiz.findAll({ where: { lesson_id: id } });
+    }
+
+    // --- NEW: Find Next & Previous Lesson ---
+    // Previous: Same course, order < current, take largest order
+    const [prevRows] = await Lesson.findAll({
+      where: {
+        course_id: lesson.course_id
+        // We need custom operator logic here, but Lesson.findAll simple helper doesn't support complex ops easily
+        // Let's use raw query or logic since our Model is simple
+      },
+      order: [['display_order', 'DESC']]
+    });
+
+    // Let's use specific queries for next/prev to be efficient
+    const allLessonsInCourse = await Lesson.findAll({
+      where: { course_id: lesson.course_id },
+      order: [['display_order', 'ASC']]
+    });
+
+    const currentIndex = allLessonsInCourse.findIndex(l => l.id == id);
+    const prevLesson = currentIndex > 0 ? allLessonsInCourse[currentIndex - 1] : null;
+    const nextLesson = currentIndex < allLessonsInCourse.length - 1 ? allLessonsInCourse[currentIndex + 1] : null;
 
     lesson.videos = videos;
     lesson.quizzes = quizzes;
+    lesson.prev_lesson_id = prevLesson ? prevLesson.id : null;
+    lesson.next_lesson_id = nextLesson ? nextLesson.id : null;
+    lesson.course_lessons = allLessonsInCourse.map(l => ({
+      id: l.id,
+      title: l.title,
+      display_order: l.display_order
+    }));
 
     res.json({
       success: true,
@@ -132,7 +167,7 @@ export const createLesson = async (req, res) => {
 export const updateLesson = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const { video_url, ...lessonUpdates } = req.body;
 
     const lesson = await Lesson.findByPk(id);
 
@@ -143,7 +178,26 @@ export const updateLesson = async (req, res) => {
       });
     }
 
-    await lesson.update(updates);
+    // 1. Update Lesson fields
+    await lesson.update(lessonUpdates);
+
+    // 2. Update Video if video_url is provided
+    if (video_url !== undefined) {
+      const existingVideos = await Video.findAll({ where: { lesson_id: id } });
+      if (existingVideos.length > 0) {
+        // Update first video
+        await existingVideos[0].update({ video_url });
+      } else if (video_url) {
+        // Create new video if none existed
+        await Video.create({
+          lesson_id: id,
+          title: `Video - ${lesson.title}`,
+          video_url,
+          display_order: 0,
+          duration: 0
+        });
+      }
+    }
 
     res.json({
       success: true,

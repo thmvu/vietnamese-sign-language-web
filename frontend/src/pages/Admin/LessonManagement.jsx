@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCourses } from '../../services/api';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api, { getCourses } from '../../services/api';
 
 const LessonManagement = () => {
     const [lessons, setLessons] = useState([]);
@@ -34,21 +31,17 @@ const LessonManagement = () => {
     };
 
     const fetchAllLessons = async () => {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_URL}/lessons`, {
-            headers: { Authorization: `Bearer ${token}` },
+        // api instance handles base URL and token automatically
+        const response = await api.get('/lessons', {
             params: { limit: 100 }
         });
-        return response.data.data.lessons;
+        return response.data.lessons;
     };
 
     const handleDelete = async (id) => {
         if (!confirm('Xóa bài học này?')) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${API_URL}/lessons/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/lessons/${id}`);
             fetchData();
             alert('Đã xóa bài học');
         } catch (error) {
@@ -130,17 +123,36 @@ const LessonForm = ({ lesson, courses, onClose }) => {
     });
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        if (lesson) {
+            fetchLessonVideo();
+        }
+    }, [lesson]);
+
+    const fetchLessonVideo = async () => {
+        try {
+            const res = await api.get(`/videos/lesson/${lesson.id}`);
+            // Check api response structure (usually just data, but check logic)
+            // Assuming api interceptor returns response.data directly or response.
+            // Based on api.js: response.data || response.data?.data
+            // Let's assume standard response structure
+            if (res && res.length > 0) {
+                // The getLessonVideos API in api.js returns response.data directly which is an array of videos
+                setFormData(prev => ({ ...prev, video_url: res[0].video_url }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch video:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-
             if (lesson) {
-                await axios.put(`${API_URL}/lessons/${lesson.id}`, formData, config);
+                await api.put(`/lessons/${lesson.id}`, formData);
             } else {
-                await axios.post(`${API_URL}/lessons`, formData, config);
+                await api.post('/lessons', formData);
             }
             onClose(true);
         } catch (error) {

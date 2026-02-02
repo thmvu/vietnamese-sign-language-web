@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const ChatBot = () => {
-  // ===============================
-  // ENV
-  // ===============================
-  const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
   // ===============================
   // STATE
   // ===============================
@@ -24,36 +20,6 @@ const ChatBot = () => {
   // REF
   // ===============================
   const messagesEndRef = useRef(null);
-  const chatRef = useRef(null); // LƯU CHAT SESSION
-
-  // ===============================
-  // INIT GEMINI CHAT (1 LẦN)
-  // ===============================
-  useEffect(() => {
-    if (!API_KEY) return;
-
-    const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-    });
-
-    chatRef.current = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: `
-Bạn là trợ lý AI cho website học Ngôn ngữ Ký hiệu Việt Nam.
-Trả lời ngắn gọn, dễ hiểu, thân thiện.
-Nếu câu hỏi liên quan đến bài học, hãy gợi ý người dùng vào mục "Khóa học".
-`,
-            },
-          ],
-        },
-      ],
-    });
-  }, [API_KEY]);
 
   // ===============================
   // AUTO SCROLL
@@ -78,39 +44,41 @@ Nếu câu hỏi liên quan đến bài học, hãy gợi ý người dùng vào
     setInput("");
     setIsTyping(true);
 
-    // ===============================
-    // DEMO MODE (NO API KEY)
-    // ===============================
-    if (!API_KEY || !chatRef.current) {
-      setTimeout(() => {
+    try {
+      const token = localStorage.getItem('token');
+
+      // Map history to backend format
+      const conversationHistory = messages.slice(1).map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        content: msg.text
+      }));
+
+      const responseRes = await fetch(`${API_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: text,
+          conversationHistory
+        })
+      });
+
+      const data = await responseRes.json();
+
+      if (data.success) {
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now() + 1,
             role: "bot",
-            text: "🤖 Đây là chế độ demo. AI sẽ được tích hợp đầy đủ khi kết nối backend.",
+            text: data.data.message,
           },
         ]);
-        setIsTyping(false);
-      }, 800);
-      return;
-    }
-
-    try {
-      // ===============================
-      // SEND TO GEMINI CHAT
-      // ===============================
-      const result = await chatRef.current.sendMessage(text);
-      const response = result.response.text();
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          role: "bot",
-          text: response,
-        },
-      ]);
+      } else {
+        throw new Error(data.message || 'Lỗi từ máy chủ chatbot');
+      }
     } catch (error) {
       console.error("ChatBot Error:", error);
       setMessages((prev) => [
@@ -118,7 +86,7 @@ Nếu câu hỏi liên quan đến bài học, hãy gợi ý người dùng vào
         {
           id: Date.now() + 1,
           role: "bot",
-          text: "Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng thử lại sau.",
+          text: "Xin lỗi, tôi đang gặp sự cố kỹ thuật kết nối với AI. Vui lòng thử lại sau.",
         },
       ]);
     } finally {
@@ -164,9 +132,8 @@ Nếu câu hỏi liên quan đến bài học, hãy gợi ý người dùng vào
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
+                }`}
             >
               {msg.role === "bot" && (
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2 mt-1 border">
@@ -175,11 +142,10 @@ Nếu câu hỏi liên quan đến bài học, hãy gợi ý người dùng vào
               )}
 
               <div
-                className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === "user"
+                className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
                     ? "bg-blue-600 text-white rounded-tr-none"
                     : "bg-white text-slate-700 border rounded-tl-none"
-                }`}
+                  }`}
               >
                 <p className="whitespace-pre-wrap">{msg.text}</p>
               </div>

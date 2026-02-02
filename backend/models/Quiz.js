@@ -32,12 +32,12 @@ class Quiz {
   }
 
   static async create(data) {
-    const { lesson_id, question, options, correct_answer } = data;
+    const { lesson_id, quiz_set_id, question, options, correct_answer } = data;
     const optionsJson = JSON.stringify(options);
 
     const [result] = await db.query(
-      'INSERT INTO quizzes (lesson_id, question, options, correct_answer, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
-      [lesson_id, question, optionsJson, correct_answer]
+      'INSERT INTO quizzes (lesson_id, quiz_set_id, question, options, correct_answer, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
+      [lesson_id, quiz_set_id, question, optionsJson, correct_answer]
     );
     return Quiz.findByPk(result.insertId);
   }
@@ -63,6 +63,16 @@ class Quiz {
 
   async destroy() {
     await db.query('UPDATE quizzes SET deletedAt = NOW() WHERE id = ?', [this.id]);
+  }
+
+  static async destroyAll({ where = {} }) {
+    const keys = Object.keys(where);
+    if (keys.length === 0) return; // Safety: don't delete everything without condition
+
+    const conditions = keys.map(key => `${key} = ?`).join(' AND ');
+    const values = keys.map(key => where[key]);
+
+    await db.query(`UPDATE quizzes SET deletedAt = NOW() WHERE ${conditions}`, values);
   }
 
   toJSON() {
