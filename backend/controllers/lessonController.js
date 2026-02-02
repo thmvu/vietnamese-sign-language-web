@@ -66,8 +66,36 @@ export const getLessonById = async (req, res) => {
       quizzes = await Quiz.findAll({ where: { lesson_id: id } });
     }
 
+    // --- NEW: Find Next & Previous Lesson ---
+    // Previous: Same course, order < current, take largest order
+    const [prevRows] = await Lesson.findAll({
+      where: {
+        course_id: lesson.course_id
+        // We need custom operator logic here, but Lesson.findAll simple helper doesn't support complex ops easily
+        // Let's use raw query or logic since our Model is simple
+      },
+      order: [['display_order', 'DESC']]
+    });
+
+    // Let's use specific queries for next/prev to be efficient
+    const allLessonsInCourse = await Lesson.findAll({
+      where: { course_id: lesson.course_id },
+      order: [['display_order', 'ASC']]
+    });
+
+    const currentIndex = allLessonsInCourse.findIndex(l => l.id == id);
+    const prevLesson = currentIndex > 0 ? allLessonsInCourse[currentIndex - 1] : null;
+    const nextLesson = currentIndex < allLessonsInCourse.length - 1 ? allLessonsInCourse[currentIndex + 1] : null;
+
     lesson.videos = videos;
     lesson.quizzes = quizzes;
+    lesson.prev_lesson_id = prevLesson ? prevLesson.id : null;
+    lesson.next_lesson_id = nextLesson ? nextLesson.id : null;
+    lesson.course_lessons = allLessonsInCourse.map(l => ({
+      id: l.id,
+      title: l.title,
+      display_order: l.display_order
+    }));
 
     res.json({
       success: true,
