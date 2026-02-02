@@ -8,20 +8,22 @@ const CourseList = () => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setLoading(true)
-        const data = await getCourses()
-        setCourses(data)
-      } catch (error) {
-        console.error('Lỗi tải khóa học:', error)
-        setError(error.message || 'Không thể tải danh sách khóa học')
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchCourses()
   }, [])
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getCourses()
+      setCourses(data)
+    } catch (error) {
+      console.error('Lỗi tải khóa học:', error)
+      setError(error.userMessage || error.message || 'Không thể tải danh sách khóa học')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center">
@@ -30,14 +32,22 @@ const CourseList = () => {
   )
 
   if (error) return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="text-center">
-        <p className="text-red-600 mb-4">{error}</p>
+    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="text-center max-w-md mx-auto p-8 bg-white rounded-2xl shadow-xl">
+        <div className="mb-6">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">Không thể tải khóa học</h3>
+          <p className="text-red-600 mb-4 whitespace-pre-line text-sm">{error}</p>
+        </div>
         <button
-          onClick={() => window.location.reload()}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          onClick={fetchCourses}
+          className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl"
         >
-          Thử lại
+          🔄 Thử lại
         </button>
       </div>
     </div>
@@ -64,8 +74,8 @@ const CourseList = () => {
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold ${course.level === 'beginner' ? 'bg-green-100 text-green-700' :
-                      course.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
-                        'bg-purple-100 text-purple-700'
+                    course.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
+                      'bg-purple-100 text-purple-700'
                     }`}>
                     {course.level === 'beginner' ? 'Cơ bản' :
                       course.level === 'intermediate' ? 'Trung cấp' : 'Nâng cao'}
