@@ -1,6 +1,7 @@
 import Lesson from '../models/Lesson.js';
 import Video from '../models/Video.js';
 import Quiz from '../models/Quiz.js';
+import Progress from '../models/Progress.js';
 
 export const getAllLessons = async (req, res) => {
   try {
@@ -83,6 +84,17 @@ export const getLessonById = async (req, res) => {
       order: [['display_order', 'ASC']]
     });
 
+    // Check progress for sidebar
+    let completedLessonIds = [];
+    if (req.user) {
+      const progressList = await Progress.findAll({
+        where: { user_id: req.user.id }
+      });
+      completedLessonIds = progressList
+        .filter(p => p.quiz_score > 0)
+        .map(p => p.lesson_id);
+    }
+
     const currentIndex = allLessonsInCourse.findIndex(l => l.id == id);
     const prevLesson = currentIndex > 0 ? allLessonsInCourse[currentIndex - 1] : null;
     const nextLesson = currentIndex < allLessonsInCourse.length - 1 ? allLessonsInCourse[currentIndex + 1] : null;
@@ -94,7 +106,8 @@ export const getLessonById = async (req, res) => {
     lesson.course_lessons = allLessonsInCourse.map(l => ({
       id: l.id,
       title: l.title,
-      display_order: l.display_order
+      display_order: l.display_order,
+      is_completed: completedLessonIds.includes(l.id)
     }));
 
     res.json({

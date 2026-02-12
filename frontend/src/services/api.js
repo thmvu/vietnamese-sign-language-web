@@ -175,6 +175,11 @@ export const deleteCourse = async (id) => {
   return response;
 };
 
+export const completeCourse = async (courseId) => {
+  const response = await api.post(`/courses/${courseId}/complete`);
+  return response.data;
+};
+
 
 // --- LESSONS ---
 
@@ -207,10 +212,16 @@ export const getUserProgress = async () => {
   return response.data;
 };
 
+export const getUserProgressStats = async () => {
+  const response = await api.get('/progress/stats');
+  return response.data;
+};
+
 export const saveProgress = async (progressData) => {
   const response = await api.post('/progress/save', progressData);
   return response.data;
 };
+
 
 // --- PRACTICE (AI) ---
 

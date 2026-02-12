@@ -85,7 +85,7 @@ const CourseList = () => {
                 <h3 className="text-xl font-bold mb-2 text-slate-800">{course.title}</h3>
                 <p className="text-slate-500 text-sm mb-4 line-clamp-2">{course.description}</p>
 
-                <Link to={`/course/${course.id}`}>
+                <Link to={`/courses/${course.id}`}>
                   <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-blue-200 shadow-md">
                     Bắt đầu ngay →
                   </button>

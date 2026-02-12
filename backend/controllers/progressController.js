@@ -202,3 +202,65 @@ export const getUserProgress = async (req, res) => {
     });
   }
 };
+
+// New endpoint: Get aggregated stats for current user
+export const getMyProgressStats = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+
+    // Get all courses with their lessons
+    const coursesQuery = `
+      SELECT c.id, c.title, COUNT(l.id) as total_lessons
+      FROM courses c
+      LEFT JOIN lessons l ON l.course_id = c.id
+      GROUP BY c.id, c.title
+      ORDER BY c.display_order
+    `;
+    const [courses] = await db.query(coursesQuery);
+
+    // Get user's progress
+    const progressQuery = `
+      SELECT DISTINCT p.lesson_id, l.course_id
+      FROM progress p
+      JOIN lessons l ON p.lesson_id = l.id
+      WHERE p.user_id = ? AND p.quiz_score > 0
+    `;
+    const [completedLessons] = await db.query(progressQuery, [user_id]);
+
+    // Calculate progress for each course
+    const courseProgress = courses.map(course => {
+      const completed = completedLessons.filter(
+        p => p.course_id === course.id
+      ).length;
+      const total = course.total_lessons;
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      return {
+        courseId: course.id,
+        courseName: course.title,
+        completed,
+        total,
+        percentage
+      };
+    });
+
+    // Calculate overall stats
+    const totalLessons = courses.reduce((sum, c) => sum + c.total_lessons, 0);
+    const completedTotal = completedLessons.length;
+
+    res.json({
+      success: true,
+      data: {
+        completedLessons: completedTotal,
+        totalLessons: totalLessons,
+        courseProgress: courseProgress
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch progress stats',
+      error: error.message
+    });
+  }
+};
