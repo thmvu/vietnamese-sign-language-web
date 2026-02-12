@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCourses } from '../../services/api';
+import { getCourses, deleteCourse } from '../../services/api';
 import CourseForm from '../../components/Admin/CourseForm';
 
 const CourseManagement = () => {
@@ -41,10 +41,12 @@ const CourseManagement = () => {
         if (!confirm('Bạn có chắc muốn xóa khóa học này?')) return;
 
         try {
-            // TODO: Implement delete API
-            alert('Tính năng xóa sẽ được thêm sau');
+            await deleteCourse(id);
+            alert('Xóa khóa học thành công!');
+            fetchCourses(); // Refresh the list
         } catch (error) {
-            alert('Lỗi khi xóa khóa học');
+            console.error('Lỗi khi xóa khóa học:', error);
+            alert('Lỗi khi xóa khóa học: ' + (error.userMessage || error.message));
         }
     };
 
@@ -112,8 +114,8 @@ const CourseManagement = () => {
                                 />
                             )}
                             <span className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${course.level === 'beginner' ? 'bg-green-100 text-green-700' :
-                                    course.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-purple-100 text-purple-700'
+                                course.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-purple-100 text-purple-700'
                                 }`}>
                                 {course.level === 'beginner' ? 'Cơ bản' :
                                     course.level === 'intermediate' ? 'Trung cấp' : 'Nâng cao'}
