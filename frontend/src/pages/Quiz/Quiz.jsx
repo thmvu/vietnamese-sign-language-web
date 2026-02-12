@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-// 1. Import từ mock service mới
-import { getQuizAPI, submitQuizAPI } from '../../services/mockCourses'
+import { getQuiz, submitQuiz } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
 const Quiz = () => {
@@ -20,10 +19,18 @@ const Quiz = () => {
     const fetchQuiz = async () => {
       setLoading(true)
       try {
-        const data = await getQuizAPI(lessonId)
-        setQuestions(data)
+        console.log('[Quiz] Fetching quiz for lesson:', lessonId)
+        const response = await getQuiz(lessonId)
+        console.log('[Quiz] API Response:', response)
+        // Backend returns { success: true, data: [...quizzes] }
+        const quizData = response.data || response || []
+        console.log('[Quiz] Parsed quiz data:', quizData)
+        console.log('[Quiz] Number of questions:', quizData.length)
+        setQuestions(quizData)
       } catch (error) {
-        console.error('Lỗi tải quiz:', error)
+        console.error('[Quiz] Lỗi tải quiz:', error)
+        console.error('[Quiz] Error details:', error.response?.data)
+        setQuestions([])
       } finally {
         setLoading(false)
       }
@@ -50,11 +57,24 @@ const Quiz = () => {
 
     setSubmitting(true)
     try {
+      // Format answers for backend: [{ quizId, answer }]
+      const formattedAnswers = questions.map((q, index) => ({
+        quizId: q.id,
+        answer: selectedAnswers[index] || ''
+      }))
+
       // Gọi API chấm điểm
-      const response = await submitQuizAPI(user?.id, lessonId, selectedAnswers)
-      setResult(response)
+      const response = await submitQuiz(lessonId, formattedAnswers)
+      // Backend returns: { success: true, data: { score, totalQuestions, correctAnswers, results } }
+      const { correctAnswers, totalQuestions } = response.data
+      setResult({
+        score: correctAnswers,
+        total: totalQuestions,
+        passed: correctAnswers >= totalQuestions / 2
+      })
     } catch (error) {
-      alert('Có lỗi khi nộp bài')
+      console.error('Submit error:', error)
+      alert(error.userMessage || 'Có lỗi khi nộp bài')
     } finally {
       setSubmitting(false)
     }
@@ -83,17 +103,17 @@ const Quiz = () => {
             <h3 className="text-lg font-bold text-slate-800 mb-4">
               Câu {index + 1}: {q.question}
             </h3>
-            
+
             <div className="grid gap-3">
               {q.options.map((option, i) => {
                 const isSelected = selectedAnswers[index] === option
                 // Logic màu sắc khi hiện kết quả
                 let optionClass = "border-slate-200 hover:bg-blue-50 cursor-pointer"
-                
+
                 if (result) {
                   // Đã nộp bài: Hiện đúng/sai
-                  if (option === q.correctAnswer) optionClass = "bg-green-100 border-green-500 text-green-800 font-bold" // Đáp án đúng
-                  else if (isSelected && option !== q.correctAnswer) optionClass = "bg-red-100 border-red-500 text-red-800" // Chọn sai
+                  if (option === q.correct_answer) optionClass = "bg-green-100 border-green-500 text-green-800 font-bold" // Đáp án đúng
+                  else if (isSelected && option !== q.correct_answer) optionClass = "bg-red-100 border-red-500 text-red-800" // Chọn sai
                   else optionClass = "opacity-50" // Các câu khác làm mờ đi
                 } else {
                   // Chưa nộp: Chỉ hiện màu xanh khi chọn
@@ -101,7 +121,7 @@ const Quiz = () => {
                 }
 
                 return (
-                  <div 
+                  <div
                     key={i}
                     onClick={() => handleSelectOption(index, option)}
                     className={`p-4 border-2 rounded-xl transition-all ${optionClass}`}
@@ -134,15 +154,15 @@ const Quiz = () => {
               <p className="text-slate-600 text-lg mb-6">
                 Bạn đã trả lời đúng <span className="font-bold text-slate-900">{result.score}/{result.total}</span> câu hỏi.
               </p>
-              
+
               <div className="flex gap-4 justify-center">
-                <button 
-                  onClick={() => { setResult(null); setSelectedAnswers({}); window.scrollTo(0,0); }}
+                <button
+                  onClick={() => { setResult(null); setSelectedAnswers({}); window.scrollTo(0, 0); }}
                   className="px-6 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Làm lại
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/courses')}
                   className={`px-6 py-3 text-white rounded-xl font-bold shadow-md ${result.passed ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-500 hover:bg-orange-600'}`}
                 >

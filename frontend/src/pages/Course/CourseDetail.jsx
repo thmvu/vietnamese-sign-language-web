@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getCourse, getCourseLessons, completeCourse } from '../../services/api'
+import { getCourse, completeCourse } from '../../services/api'
 
 const CourseDetail = () => {
     const { id } = useParams() // course ID
@@ -15,12 +15,11 @@ const CourseDetail = () => {
         const fetchCourseData = async () => {
             setLoading(true)
             try {
-                const [courseData, lessonsData] = await Promise.all([
-                    getCourse(id),
-                    getCourseLessons(id)
-                ])
+                // getCourse already returns lessons with is_completed flags
+                const courseData = await getCourse(id)
                 setCourse(courseData)
-                setLessons(lessonsData || [])
+                // Use lessons from courseData which includes progress info
+                setLessons(courseData.lessons || [])
             } catch (error) {
                 console.error('Lỗi tải khóa học:', error)
                 setError(error.userMessage || error.message || 'Không tìm thấy khóa học')
@@ -69,14 +68,40 @@ const CourseDetail = () => {
                     )}
                 </div>
                 <div className="p-8">
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${course.level === 'beginner' ? 'bg-green-100 text-green-700' :
-                            course.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
-                                'bg-purple-100 text-purple-700'
-                            }`}>
-                            {course.level === 'beginner' ? 'Cơ bản' :
-                                course.level === 'intermediate' ? 'Trung cấp' : 'Nâng cao'}
-                        </span>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${course.level === 'beginner' ? 'bg-green-100 text-green-700' :
+                                course.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-purple-100 text-purple-700'
+                                }`}>
+                                {course.level === 'beginner' ? 'Cơ bản' :
+                                    course.level === 'intermediate' ? 'Trung cấp' : 'Nâng cao'}
+                            </span>
+                            {course.is_completed && (
+                                <span className="px-4 py-1.5 rounded-full text-sm font-bold bg-green-500 text-white flex items-center gap-1">
+                                    ✅ Đã hoàn thành
+                                </span>
+                            )}
+                        </div>
+
+                        {!course.is_completed && lessons.length > 0 && lessons.every(l => l.is_completed) && (
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm('Bạn có chắc chắn muốn đánh dấu hoàn thành khóa học này?')) {
+                                        try {
+                                            await completeCourse(course.id);
+                                            setCourse(prev => ({ ...prev, is_completed: true }));
+                                            alert('Chúc mừng! Bạn đã hoàn thành khóa học này! 🎉');
+                                        } catch (err) {
+                                            alert('Lỗi: ' + err.message);
+                                        }
+                                    }
+                                }}
+                                className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-full shadow-lg transform hover:scale-105 transition-all animate-bounce"
+                            >
+                                🏆 Hoàn thành khóa học
+                            </button>
+                        )}
                     </div>
                     <h1 className="text-4xl font-bold text-slate-800 mb-4">{course.title}</h1>
                     <p className="text-slate-600 text-lg">{course.description}</p>
