@@ -1,14 +1,20 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+const isDev = import.meta.env.DEV;
 
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 10000, // 10 second timeout
   headers: {
     'Content-Type': 'application/json'
   }
 });
+
+// Simple retry logic for network errors
+let retryCount = 0;
+const MAX_RETRIES = 3;
 
 // Add token to requests if available
 api.interceptors.request.use(
@@ -17,22 +23,87 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Log requests in development
+    if (isDev) {
+      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    if (isDev) {
+      console.error('[API Request Error]', error);
+    }
+    return Promise.reject(error);
+  }
 );
 
-// Handle response errors globally
+// Handle response errors globally with retry logic
 api.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
+  (response) => {
+    // Reset retry count on success
+    retryCount = 0;
+
+    if (isDev) {
+      console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.status);
+    }
+
+    return response.data;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Log errors in development
+    if (isDev) {
+      console.error('[API Response Error]', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        message: error.message,
+        data: error.response?.data
+      });
+    }
+
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
-    return Promise.reject(error.response?.data || error);
+
+    // Retry logic for network errors
+    if (!error.response && retryCount < MAX_RETRIES && !originalRequest._retry) {
+      retryCount++;
+      originalRequest._retry = true;
+
+      if (isDev) {
+        console.log(`[API Retry] Attempt ${retryCount}/${MAX_RETRIES} for ${originalRequest.url}`);
+      }
+
+      // Wait before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+
+      return api(originalRequest);
+    }
+
+    // Create user-friendly error message
+    const errorMessage = error.response?.data?.message
+      || error.message
+      || 'Đã xảy ra lỗi không xác định';
+
+    // Enhance error object with Vietnamese message
+    const enhancedError = {
+      ...error,
+      userMessage: !error.response
+        ? `Không thể kết nối với server. Vui lòng kiểm tra:\n1. Backend có đang chạy không? (port 5000)\n2. Kết nối mạng của bạn\n3. Firewall/Antivirus có chặn không?`
+        : error.response.status >= 500
+          ? `Lỗi server (${error.response.status}): ${errorMessage}`
+          : errorMessage
+    };
+
+    return Promise.reject(enhancedError);
   }
 );
 
@@ -88,6 +159,28 @@ export const getCourseLessons = async (courseId) => {
   return response.data;
 };
 
+// Admin course management
+export const createCourse = async (courseData) => {
+  const response = await api.post('/courses', courseData);
+  return response.data;
+};
+
+export const updateCourse = async (id, courseData) => {
+  const response = await api.put(`/courses/${id}`, courseData);
+  return response.data;
+};
+
+export const deleteCourse = async (id) => {
+  const response = await api.delete(`/courses/${id}`);
+  return response;
+};
+
+export const completeCourse = async (courseId) => {
+  const response = await api.post(`/courses/${courseId}/complete`);
+  return response.data;
+};
+
+
 // --- LESSONS ---
 
 export const getLesson = async (id) => {
@@ -119,10 +212,16 @@ export const getUserProgress = async () => {
   return response.data;
 };
 
+export const getUserProgressStats = async () => {
+  const response = await api.get('/progress/stats');
+  return response.data;
+};
+
 export const saveProgress = async (progressData) => {
   const response = await api.post('/progress/save', progressData);
   return response.data;
 };
+
 
 // --- PRACTICE (AI) ---
 

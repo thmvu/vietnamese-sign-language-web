@@ -15,4 +15,8 @@ router.post('/', authMiddleware, checkRole('admin'), courseController.createCour
 router.put('/:id', authMiddleware, checkRole('admin'), courseController.updateCourse);
 router.delete('/:id', authMiddleware, checkRole('admin'), courseController.deleteCourse);
 
+// User routes
+router.post('/:id/complete', authMiddleware, courseController.completeCourse);
+router.get('/:id/completion', authMiddleware, courseController.getCourseCompletionStatus);
+
 export default router;

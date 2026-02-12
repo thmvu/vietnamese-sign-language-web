@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { getUserProgress } from '../../services/api'
+import { getUserProgressStats } from '../../services/api'
 
 const Account = ({ user }) => {
-  const [progress, setProgress] = useState(null)
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        const data = await getUserProgress()
-        setProgress(data)
+        const data = await getUserProgressStats()
+        setStats(data)
       } catch (error) {
         console.error('Lỗi tải tiến độ:', error)
-        setProgress({ completedLessons: 0, totalLessons: 0, totalPoints: 0, accuracy: 0 })
+        setStats({ completedLessons: 0, totalLessons: 0, courseProgress: [] })
       } finally {
         setLoading(false)
       }
@@ -55,25 +55,41 @@ const Account = ({ user }) => {
           <div className="space-y-6">
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-slate-600">Bài đã hoàn thành</span>
-                <span className="font-bold">{progress?.completedLessons || 0} / {progress?.totalLessons || 0}</span>
+                <span className="text-slate-600">Tổng tiến độ</span>
+                <span className="font-bold">{stats?.completedLessons || 0} / {stats?.totalLessons || 0} bài</span>
               </div>
               <div className="w-full bg-slate-200 rounded-full h-3">
                 <div
                   className="bg-blue-600 h-3 rounded-full transition-all"
-                  style={{ width: `${(progress?.completedLessons / progress?.totalLessons * 100) || 0}%` }}
+                  style={{ width: `${stats?.totalLessons > 0 ? Math.round((stats?.completedLessons / stats?.totalLessons) * 100) : 0}%` }}
                 ></div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-50 p-4 rounded-xl">
-                <p className="text-sm text-slate-600 mb-1">Tổng điểm</p>
-                <p className="text-2xl font-bold text-blue-600">{progress?.totalPoints || 0}</p>
-              </div>
-              <div className="bg-green-50 p-4 rounded-xl">
-                <p className="text-sm text-slate-600 mb-1">Độ chính xác</p>
-                <p className="text-2xl font-bold text-green-600">{progress?.accuracy || 0}%</p>
+            {/* Course Progress */}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4 text-slate-700">Tiến độ từng khóa học</h3>
+              <div className="space-y-4">
+                {stats?.courseProgress?.map(course => (
+                  <div key={course.courseId}>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-slate-700 font-medium">{course.courseName}</span>
+                      <span className="text-sm text-slate-600">
+                        {course.completed}/{course.total} bài ({course.percentage}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${course.percentage >= 80 ? 'bg-green-500' :
+                          course.percentage >= 50 ? 'bg-blue-500' :
+                            course.percentage >= 20 ? 'bg-yellow-500' :
+                              'bg-slate-400'
+                          }`}
+                        style={{ width: `${course.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -107,7 +123,7 @@ const Account = ({ user }) => {
           </button>
         </form>
       </div>
-    </div>
+    </div >
   )
 }
 

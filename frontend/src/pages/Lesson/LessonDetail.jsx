@@ -136,7 +136,7 @@ const LessonDetail = () => {
 
               {lesson.next_lesson_id && (
                 <Link
-                  to={`/course/${lesson.next_lesson_id}`}
+                  to={`/lesson/${lesson.next_lesson_id}`}
                   className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg shadow-blue-200 transition-all transform hover:scale-105"
                 >
                   Bài tiếp theo →
@@ -158,16 +158,16 @@ const LessonDetail = () => {
                 {lesson.course_lessons.map((courseLesson, index) => (
                   <Link
                     key={courseLesson.id}
-                    to={`/course/${courseLesson.id}`}
+                    to={`/lesson/${courseLesson.id}`}
                     className={`block p-3 rounded-lg transition-colors ${courseLesson.id === lesson.id
-                        ? 'bg-blue-50 border-blue-200 border'
-                        : 'hover:bg-slate-50 border border-transparent'
+                      ? 'bg-blue-50 border-blue-200 border'
+                      : 'hover:bg-slate-50 border border-transparent'
                       }`}
                   >
                     <div className="flex items-start gap-3">
                       <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${courseLesson.id === lesson.id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-200 text-slate-600'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-200 text-slate-600'
                         }`}>
                         {index + 1}
                       </span>
@@ -175,6 +175,9 @@ const LessonDetail = () => {
                         <p className={`font-semibold text-sm ${courseLesson.id === lesson.id ? 'text-blue-600' : 'text-slate-700'
                           }`}>
                           {courseLesson.title}
+                          {courseLesson.is_completed && (
+                            <span className="ml-2 text-green-500 text-xs">✅</span>
+                          )}
                         </p>
                       </div>
                     </div>

@@ -6,12 +6,12 @@ const Footer = () => {
   return (
     <footer className="bg-slate-900 text-slate-300 pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-12 md:grid-cols-4">
-        
+
         {/* Cột 1: Về VSL Learn - ĐÃ SỬA NỘI DUNG */}
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2 mb-4 text-white">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <HandMetal size={20} />
+              <HandMetal size={20} />
             </div>
             <span className="text-xl font-extrabold">VSL Learn</span>
           </div>
@@ -34,7 +34,7 @@ const Footer = () => {
           <ul className="space-y-3">
             <li><Link to="/courses" className="hover:text-blue-400 transition">Danh sách khóa học</Link></li>
             <li><Link to="/practice" className="hover:text-blue-400 transition">Luyện tập với AI</Link></li>
-            <li><a href="#" className="hover:text-blue-400 transition">Về dự án</a></li>
+            <li><a href="https://github.com/thmvu/vietnamese-sign-language-web" className="hover:text-blue-400 transition">Về dự án</a></li>
             <li><a href="#" className="hover:text-blue-400 transition">Câu hỏi thường gặp (FAQ)</a></li>
           </ul>
         </div>
@@ -54,16 +54,16 @@ const Footer = () => {
           <h3 className="text-white font-bold mb-4 uppercase tracking-wider text-sm">Liên hệ</h3>
           <ul className="space-y-3">
             <li className="flex items-center gap-3">
-              <Mail size={18} className="text-blue-500"/> 
-              <a href="mailto:support@vsl-learn.vn" className="hover:text-white">support@vsl-learn.vn</a>
+              <Mail size={18} className="text-blue-500" />
+              <a href="mailto:support@vsl-learn.vn" className="hover:text-white">[EMAIL_ADDRESS]</a>
             </li>
             <li className="flex items-center gap-3">
-              <Phone size={18} className="text-blue-500"/>
-              <span>090 123 4567</span>
+              <Phone size={18} className="text-blue-500" />
+              <span>0868419498</span>
             </li>
             <li className="flex items-start gap-3">
-              <MapPin size={18} className="text-blue-500 mt-1"/>
-              <span>Đại học Công nghệ,<br/>Hà Nội, Việt Nam</span>
+              <MapPin size={18} className="text-blue-500 mt-1" />
+              <span>Đại học Phenikaa , Trường Công Nghệ Thông Tin ,<br />Hà Nội, Việt Nam</span>
             </li>
           </ul>
         </div>

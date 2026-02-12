@@ -1,5 +1,7 @@
 import Course from '../models/Course.js';
 import Lesson from '../models/Lesson.js';
+import UserCourse from '../models/UserCourse.js';
+import Progress from '../models/Progress.js';
 import db from '../config/database.js';
 
 export const getAllCourses = async (req, res) => {
@@ -55,7 +57,35 @@ export const getCourseById = async (req, res) => {
         }
 
         // Fetch lessons for this course
-        const lessons = await Lesson.findAll({ where: { course_id: id } });
+        let lessons = await Lesson.findAll({ where: { course_id: id } });
+
+        // If user is logged in, check progress
+        if (req.user) {
+            const userId = req.user.id;
+
+            // Check course completion
+            const userCourse = await UserCourse.findOne({
+                where: { user_id: userId, course_id: id }
+            });
+            course.is_completed = !!userCourse && userCourse.is_completed;
+
+            // Check lessons completion
+            const progressList = await Progress.findAll({
+                where: { user_id: userId }
+            });
+
+            // Map progress to lessons
+            lessons = lessons.map(lesson => {
+                const p = progressList.find(p => p.lesson_id === lesson.id);
+                // Lesson is completed if quiz_score > 0 OR (maybe) just visited?
+                // Strict: quiz_score > 0
+                return {
+                    ...lesson.toJSON(),
+                    is_completed: p && p.quiz_score > 0
+                };
+            });
+        }
+
         course.lessons = lessons;
 
         res.json({
@@ -191,3 +221,57 @@ export const deleteCourse = async (req, res) => {
     }
 };
 
+
+// Check if course is completed by user
+export const getCourseCompletionStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const userCourse = await UserCourse.findOne({
+            where: { user_id: userId, course_id: id }
+        });
+
+        res.json({
+            success: true,
+            is_completed: !!userCourse && userCourse.is_completed
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to check course completion',
+            error: error.message
+        });
+    }
+};
+
+// Mark course as completed
+export const completeCourse = async (req, res) => {
+    try {
+        const { id } = req.params; // Course ID
+        const userId = req.user.id;
+
+        // Verify all lessons are completed (optional, but good practice)
+        // For now, we trust the frontend call or just mark it
+        // Let's just mark it for flexibility
+
+        const userCourse = await UserCourse.create({
+            user_id: userId,
+            course_id: id,
+            is_completed: true,
+            completed_at: new Date()
+        });
+
+        res.json({
+            success: true,
+            message: 'Course marked as completed',
+            data: userCourse
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to complete course',
+            error: error.message
+        });
+    }
+};

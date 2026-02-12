@@ -7,6 +7,8 @@ const router = express.Router();
 
 router.post('/save', authMiddleware, progressController.saveProgress);
 router.get('/me', authMiddleware, progressController.getMyProgress);
+router.get('/stats', authMiddleware, progressController.getMyProgressStats);
+
 
 router.get('/all', authMiddleware, checkRole('admin'), progressController.getAllProgress);
 router.get('/user/:userId', authMiddleware, checkRole('admin'), progressController.getUserProgress);

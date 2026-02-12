@@ -21,13 +21,17 @@ app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [process.env.FRONTEND_URL].filter(Boolean);
+
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
     // Allow any localhost origin (dev mode) or specific allowed origins
-    if (/^http:\/\/localhost:\d+$/.test(origin) || allowedOrigins.includes(origin)) {
+    if (/^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+      /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin) ||
+      allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] Rejected origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
