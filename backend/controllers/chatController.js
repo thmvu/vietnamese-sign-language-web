@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Initialize Gemini with the API key from environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const chat = async (req, res) => {
@@ -15,31 +16,41 @@ export const chat = async (req, res) => {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: 'GEMINI_API_KEY is not configured in .env'
+      });
+    }
+
+    // Using gemini-flash-latest which is verified to work with the current quota
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const instructions = `Bạn là trợ lý AI cho website học Ngôn ngữ Ký hiệu Việt Nam.
 Trả lời ngắn gọn, dễ hiểu, thân thiện. 
 Dùng tiếng Việt tự nhiên. 
 Nếu câu hỏi liên quan đến bài học, hãy gợi ý người dùng vào mục "Khóa học".`;
 
-    // Map and filter history to ensure it's valid for Gemini
-    // Rules: Must alternate user/model. Must start with user.
-    let history = [];
+    // Initialize chat history with system instructions
+    let history = [
+      { role: 'user', parts: [{ text: instructions }] },
+      { role: 'model', parts: [{ text: 'Đã hiểu. Tôi là trợ lý học Thủ ngữ Việt Nam, tôi đã sẵn sàng hỗ trợ bạn!' }] }
+    ];
 
-    // Initial context
-    history.push({ role: 'user', parts: [{ text: instructions }] });
-    history.push({ role: 'model', parts: [{ text: 'Đã hiểu. Tôi là trợ lý học Thủ ngữ Việt Nam, tôi đã sẵn sàng!' }] });
-
-    // Append history from frontend, ensuring we don't break alternating roles
+    // Map conversation history from frontend
+    // Gemini requires alternating user/model roles
     if (Array.isArray(conversationHistory)) {
-      conversationHistory.forEach((msg, index) => {
+      conversationHistory.forEach((msg) => {
         const role = msg.role === 'user' ? 'user' : 'model';
-        // Only push if it alternates from the last one
+
+        // Ensure alternating roles and valid content
         if (history.length === 0 || history[history.length - 1].role !== role) {
-          history.push({
-            role: role,
-            parts: [{ text: msg.content }]
-          });
+          if (msg.content && msg.content.trim()) {
+            history.push({
+              role: role,
+              parts: [{ text: msg.content }]
+            });
+          }
         }
       });
     }
