@@ -1,6 +1,15 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Axios instance gọi Python AI Service qua Vite proxy /ai-service → localhost:8000
+// Dùng proxy để tránh CORS và Windows Firewall chặn direct localhost:8000
+const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || '/ai-service';
+const aiApi = axios.create({
+  baseURL: AI_SERVICE_URL,
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json' }
+});
 const isDev = import.meta.env.DEV;
 
 // Create axios instance with default config
@@ -225,8 +234,28 @@ export const saveProgress = async (progressData) => {
 
 // --- PRACTICE (AI) ---
 
-export const evaluatePractice = async (landmarks) => {
-  const response = await api.post('/practice/evaluate', { landmarks });
+/**
+ * Gửi sequence 100 frame lên Python FastAPI để nhận diện ký hiệu.
+ * @param {Array} frames - mảng 100 frame, mỗi frame là mảng 21 landmarks [[x,y], ...]
+ */
+export const evaluatePractice = async (frames) => {
+  const response = await aiApi.post('/predict', { frames });
+  // aiApi trả về response.data trực tiếp
+  return {
+    success: true,
+    data: {
+      predicted_sign: response.data.predicted_sign,
+      confidence: response.data.confidence,
+      feedback: response.data.confidence > 0.75
+        ? 'Xuất sắc! Ký hiệu của bạn rất chính xác.'
+        : 'Thử lại nhé! Điều chỉnh tư thế tay cho đúng hơn.'
+    }
+  };
+};
+
+/** Kiểm tra Python AI Service có sẵn sàng không */
+export const checkAiServiceHealth = async () => {
+  const response = await aiApi.get('/health');
   return response.data;
 };
 
