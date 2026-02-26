@@ -8,6 +8,7 @@ class Progress {
     this.completed_videos = typeof data.completed_videos === 'string' ? JSON.parse(data.completed_videos) : (data.completed_videos || []);
     this.quiz_score = data.quiz_score || 0;
     this.practice_score = data.practice_score || 0;
+    this.is_completed = !!data.is_completed;
     this.last_access = data.last_access || new Date();
     this.created_at = data.createdAt || data.created_at;
     this.updated_at = data.updatedAt || data.updated_at;
@@ -43,7 +44,7 @@ class Progress {
   }
 
   static async create(data) {
-    const { user_id, lesson_id, completed_videos, quiz_score, practice_score } = data;
+    const { user_id, lesson_id, completed_videos, quiz_score, practice_score, is_completed } = data;
     const completedVideosJson = JSON.stringify(completed_videos || []);
 
     // Check existing
@@ -53,8 +54,8 @@ class Progress {
     }
 
     const [result] = await db.query(
-      'INSERT INTO progress (user_id, lesson_id, completed_videos, quiz_score, practice_score, last_access, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, NOW(), NOW(), NOW())',
-      [user_id, lesson_id, completedVideosJson, quiz_score || 0, practice_score || 0]
+      'INSERT INTO progress (user_id, lesson_id, completed_videos, quiz_score, practice_score, is_completed, last_access, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())',
+      [user_id, lesson_id, completedVideosJson, quiz_score || 0, practice_score || 0, is_completed || false]
     );
     return Progress.findOne({ where: { id: result.insertId } });
   }

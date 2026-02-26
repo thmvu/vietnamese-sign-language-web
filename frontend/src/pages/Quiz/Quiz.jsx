@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getQuiz, submitQuiz } from '../../services/api'
+import { getQuiz, submitQuiz, saveProgress, getLesson } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import LessonCompleteModal from '../../components/LessonCompleteModal'
 
 const Quiz = () => {
   const { lessonId } = useParams()
@@ -13,29 +14,34 @@ const Quiz = () => {
   const [result, setResult] = useState(null) // Kết quả trả về từ API
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [lesson, setLesson] = useState(null)
+  const [showCompleteModal, setShowCompleteModal] = useState(false)
 
   // Tải câu hỏi
   useEffect(() => {
-    const fetchQuiz = async () => {
+    const fetchQuizAndLesson = async () => {
       setLoading(true)
       try {
-        console.log('[Quiz] Fetching quiz for lesson:', lessonId)
-        const response = await getQuiz(lessonId)
-        console.log('[Quiz] API Response:', response)
-        // Backend returns { success: true, data: [...quizzes] }
-        const quizData = response.data || response || []
-        console.log('[Quiz] Parsed quiz data:', quizData)
-        console.log('[Quiz] Number of questions:', quizData.length)
-        setQuestions(quizData)
+        console.log('[Quiz] Fetching data for lesson:', lessonId)
+        const [quizResponse, lessonData] = await Promise.all([
+          getQuiz(lessonId),
+          getLesson(lessonId)
+        ])
+
+        console.log('[Quiz Debug] quizResponse:', quizResponse)
+        const items = quizResponse.data || quizResponse || []
+        console.log('[Quiz Debug] Parsed items:', items)
+
+        setQuestions(items)
+        setLesson(lessonData)
       } catch (error) {
-        console.error('[Quiz] Lỗi tải quiz:', error)
-        console.error('[Quiz] Error details:', error.response?.data)
+        console.error('[Quiz] Lỗi tải dữ liệu:', error)
         setQuestions([])
       } finally {
         setLoading(false)
       }
     }
-    fetchQuiz()
+    fetchQuizAndLesson()
   }, [lessonId])
 
   // Xử lý khi chọn đáp án
@@ -65,13 +71,32 @@ const Quiz = () => {
 
       // Gọi API chấm điểm
       const response = await submitQuiz(lessonId, formattedAnswers)
-      // Backend returns: { success: true, data: { score, totalQuestions, correctAnswers, results } }
-      const { correctAnswers, totalQuestions } = response.data
+      // response from api.js is already response.data (the inner data object)
+      const { correctAnswers, totalQuestions } = response
+      const isPassed = correctAnswers >= totalQuestions / 2
+
       setResult({
         score: correctAnswers,
         total: totalQuestions,
-        passed: correctAnswers >= totalQuestions / 2
+        passed: isPassed
       })
+
+      // If passed, save progress as completed
+      if (isPassed) {
+        try {
+          await saveProgress({
+            lesson_id: lessonId,
+            quiz_score: correctAnswers,
+            is_completed: true
+          })
+          // Show celebration modal after a short delay
+          setTimeout(() => {
+            setShowCompleteModal(true)
+          }, 1000)
+        } catch (err) {
+          console.error('Lỗi khi lưu tiến độ:', err)
+        }
+      }
     } catch (error) {
       console.error('Submit error:', error)
       alert(error.userMessage || 'Có lỗi khi nộp bài')
@@ -173,6 +198,12 @@ const Quiz = () => {
           </div>
         )}
       </div>
+
+      <LessonCompleteModal
+        isOpen={showCompleteModal}
+        lessonId={lessonId}
+        nextLessonId={lesson?.next_lesson_id}
+      />
     </div>
   )
 }

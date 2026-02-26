@@ -4,7 +4,7 @@ import db from '../config/database.js';
 
 export const saveProgress = async (req, res) => {
   try {
-    const { lesson_id, completed_videos, quiz_score, practice_score } = req.body;
+    const { lesson_id, completed_videos, quiz_score, practice_score, is_completed } = req.body;
     const user_id = req.user.id;
 
     if (!lesson_id) {
@@ -23,13 +23,15 @@ export const saveProgress = async (req, res) => {
         lesson_id,
         completed_videos: completed_videos || [],
         quiz_score: quiz_score || 0,
-        practice_score: practice_score || 0
+        practice_score: practice_score || 0,
+        is_completed: is_completed || false
       });
     } else {
       const updateData = {};
       if (completed_videos) updateData.completed_videos = completed_videos;
       if (quiz_score !== undefined) updateData.quiz_score = quiz_score;
       if (practice_score !== undefined) updateData.practice_score = practice_score;
+      if (is_completed !== undefined) updateData.is_completed = is_completed;
 
       await progress.update(updateData);
     }
@@ -72,6 +74,7 @@ export const getMyProgress = async (req, res) => {
       completed_videos: typeof row.completed_videos === 'string' ? JSON.parse(row.completed_videos) : row.completed_videos,
       quiz_score: row.quiz_score,
       practice_score: row.practice_score,
+      is_completed: !!row.is_completed,
       last_access: row.last_access,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -223,7 +226,7 @@ export const getMyProgressStats = async (req, res) => {
       SELECT DISTINCT p.lesson_id, l.course_id
       FROM progress p
       JOIN lessons l ON p.lesson_id = l.id
-      WHERE p.user_id = ? AND p.quiz_score > 0
+      WHERE p.user_id = ? AND p.is_completed = TRUE
     `;
     const [completedLessons] = await db.query(progressQuery, [user_id]);
 
