@@ -5,5 +5,7 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.post('/', authMiddleware, chatController.chat);
+router.get('/history', authMiddleware, chatController.getHistory);
+router.delete('/history', authMiddleware, chatController.clearHistory);
 
 export default router;

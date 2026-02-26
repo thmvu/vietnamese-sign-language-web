@@ -29,6 +29,59 @@ const ChatBot = () => {
   }, [messages, isTyping]);
 
   // ===============================
+  // INITIAL LOAD
+  // ===============================
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/chat/history`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success && data.data.length > 0) {
+        const mappedMessages = data.data.map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          text: msg.content
+        }));
+        // Prepend the default welcome message if it's the first time
+        setMessages(prev => [prev[0], ...mappedMessages]);
+      }
+    } catch (error) {
+      console.error("Error fetching history:", error);
+    }
+  };
+
+  const clearChatHistory = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa lịch sử chat?")) return;
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/chat/history`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      // Reset to welcome message
+      setMessages([
+        {
+          id: 1,
+          role: "bot",
+          text: "Xin chào! Tôi là trợ lý AI hỗ trợ học Ngôn ngữ Ký hiệu Việt Nam. Bạn cần giúp gì không?",
+        },
+      ]);
+    } catch (error) {
+      console.error("Error clearing history:", error);
+    }
+  };
+
+  // ===============================
   // SEND MESSAGE
   // ===============================
   const handleSend = async (text = input) => {
@@ -47,12 +100,6 @@ const ChatBot = () => {
     try {
       const token = localStorage.getItem('token');
 
-      // Map history to backend format
-      const conversationHistory = messages.slice(1).map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        content: msg.text
-      }));
-
       const responseRes = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: {
@@ -60,8 +107,7 @@ const ChatBot = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          message: text,
-          conversationHistory
+          message: text
         })
       });
 
@@ -110,19 +156,27 @@ const ChatBot = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 h-[calc(100vh-80px)] flex flex-col">
       {/* HEADER */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl shadow-lg text-white">
-          🤖
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl shadow-lg text-white">
+            🤖
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">
+              Trợ lý AI học Thủ ngữ Việt Nam
+            </h1>
+            <p className="text-sm text-green-600 font-medium flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Đang hoạt động
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Trợ lý AI học Thủ ngữ Việt Nam
-          </h1>
-          <p className="text-sm text-green-600 font-medium flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            Đang hoạt động
-          </p>
-        </div>
+        <button
+          onClick={clearChatHistory}
+          className="text-xs font-bold text-red-500 hover:text-red-700 underline flex items-center gap-1 bg-white px-3 py-2 rounded-xl border border-red-50 shadow-sm"
+        >
+          🗑️ Xóa lịch sử
+        </button>
       </div>
 
       {/* CHAT BOX */}
@@ -143,8 +197,8 @@ const ChatBot = () => {
 
               <div
                 className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-tr-none"
-                    : "bg-white text-slate-700 border rounded-tl-none"
+                  ? "bg-blue-600 text-white rounded-tr-none"
+                  : "bg-white text-slate-700 border rounded-tl-none"
                   }`}
               >
                 <p className="whitespace-pre-wrap">{msg.text}</p>
