@@ -91,7 +91,7 @@ export const getLessonById = async (req, res) => {
         where: { user_id: req.user.id }
       });
       completedLessonIds = progressList
-        .filter(p => p.quiz_score > 0)
+        .filter(p => p.is_completed)
         .map(p => p.lesson_id);
     }
 

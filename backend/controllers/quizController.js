@@ -63,11 +63,15 @@ export const getQuizzesByLesson = async (req, res) => {
 
     // Find associated set
     const sets = await QuizSet.findAll({ where: { lesson_id: lessonId } });
-    if (sets.length === 0) {
-      return res.json({ success: true, data: [] });
+
+    let quizzes = [];
+    if (sets.length > 0) {
+      quizzes = await Quiz.findAll({ where: { quiz_set_id: sets[0].id } });
+    } else {
+      // Fallback: search by lesson_id directly
+      quizzes = await Quiz.findAll({ where: { lesson_id: lessonId } });
     }
 
-    const quizzes = await Quiz.findAll({ where: { quiz_set_id: sets[0].id } });
     res.json({ success: true, data: quizzes });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch quizzes', error: error.message });

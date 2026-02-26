@@ -194,19 +194,19 @@ export const completeCourse = async (courseId) => {
 
 export const getLesson = async (id) => {
   const response = await api.get(`/lessons/${id}`);
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 export const getLessonVideos = async (lessonId) => {
   const response = await api.get(`/videos/lesson/${lessonId}`);
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 // --- QUIZZES ---
 
 export const getQuiz = async (lessonId) => {
   const response = await api.get(`/quizzes/${lessonId}`);
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 export const submitQuiz = async (lessonId, answers) => {
