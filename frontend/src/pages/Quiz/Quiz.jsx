@@ -45,11 +45,11 @@ const Quiz = () => {
   }, [lessonId])
 
   // Xử lý khi chọn đáp án
-  const handleSelectOption = (questionIndex, option) => {
+  const handleSelectOption = (questionIndex, optionIndex) => {
     if (result) return; // Nếu đã nộp bài thì không cho chọn lại
     setSelectedAnswers({
       ...selectedAnswers,
-      [questionIndex]: option
+      [questionIndex]: String(optionIndex)
     })
   }
 
@@ -111,6 +111,15 @@ const Quiz = () => {
     </div>
   )
 
+  if (questions.length === 0) return (
+    <div className="flex h-screen items-center justify-center flex-col">
+      <h2 className="text-2xl font-bold text-slate-800 mb-4">Bài học này chưa có câu hỏi ôn tập</h2>
+      <button onClick={() => navigate(-1)} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-md">
+        Quay lại bài học
+      </button>
+    </div>
+  )
+
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
       {/* Header */}
@@ -131,14 +140,16 @@ const Quiz = () => {
 
             <div className="grid gap-3">
               {q.options.map((option, i) => {
-                const isSelected = selectedAnswers[index] === option
+                const optionIndexStr = String(i)
+                const isSelected = selectedAnswers[index] === optionIndexStr
                 // Logic màu sắc khi hiện kết quả
                 let optionClass = "border-slate-200 hover:bg-blue-50 cursor-pointer"
 
                 if (result) {
                   // Đã nộp bài: Hiện đúng/sai
-                  if (option === q.correct_answer) optionClass = "bg-green-100 border-green-500 text-green-800 font-bold" // Đáp án đúng
-                  else if (isSelected && option !== q.correct_answer) optionClass = "bg-red-100 border-red-500 text-red-800" // Chọn sai
+                  const isCorrectAnswer = optionIndexStr === String(q.correct_answer || '').trim()
+                  if (isCorrectAnswer) optionClass = "bg-green-100 border-green-500 text-green-800 font-bold" // Đáp án đúng
+                  else if (isSelected && !isCorrectAnswer) optionClass = "bg-red-100 border-red-500 text-red-800" // Chọn sai
                   else optionClass = "opacity-50" // Các câu khác làm mờ đi
                 } else {
                   // Chưa nộp: Chỉ hiện màu xanh khi chọn
@@ -148,7 +159,7 @@ const Quiz = () => {
                 return (
                   <div
                     key={i}
-                    onClick={() => handleSelectOption(index, option)}
+                    onClick={() => handleSelectOption(index, i)}
                     className={`p-4 border-2 rounded-xl transition-all ${optionClass}`}
                   >
                     {option}

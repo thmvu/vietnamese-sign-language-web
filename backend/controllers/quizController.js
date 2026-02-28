@@ -61,15 +61,21 @@ export const getQuizzesByLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
 
-    // Find associated set
-    const sets = await QuizSet.findAll({ where: { lesson_id: lessonId } });
-
+    const lesson = await Lesson.findByPk(lessonId);
     let quizzes = [];
-    if (sets.length > 0) {
-      quizzes = await Quiz.findAll({ where: { quiz_set_id: sets[0].id } });
+
+    if (lesson && lesson.quiz_set_id) {
+      quizzes = await Quiz.findAll({ where: { quiz_set_id: lesson.quiz_set_id } });
     } else {
-      // Fallback: search by lesson_id directly
-      quizzes = await Quiz.findAll({ where: { lesson_id: lessonId } });
+      // Find associated set (legacy approach)
+      const sets = await QuizSet.findAll({ where: { lesson_id: lessonId } });
+
+      if (sets.length > 0) {
+        quizzes = await Quiz.findAll({ where: { quiz_set_id: sets[0].id } });
+      } else {
+        // Fallback: search by lesson_id directly
+        quizzes = await Quiz.findAll({ where: { lesson_id: lessonId } });
+      }
     }
 
     res.json({ success: true, data: quizzes });
@@ -186,24 +192,27 @@ export const submitQuiz = async (req, res) => {
     const { lessonId } = req.params;
     const { answers } = req.body;
 
-    // FIND THE QUIZ SET FOR THIS LESSON
-    const quizSet = await QuizSet.findOne({ where: { lesson_id: lessonId } }); // We need findOne in QuizSet
-    // Wait, QuizSet.findOne might not exist yet? I need to implement it or use findAll
-    // Let's assume findAll for now or simpler logic
+    const lesson = await Lesson.findByPk(lessonId);
+    let quizzes = [];
 
-    // Quick Fix: Use DB Query directly if Model lacks findOne or implement findOne in Model
-    // But wait, QuizSet.js uses `findAll`. I should add `findOne` or just use `findAll` and take first.
+    if (lesson && lesson.quiz_set_id) {
+      quizzes = await Quiz.findAll({ where: { quiz_set_id: lesson.quiz_set_id } });
+    } else {
+      // FIND THE QUIZ SET FOR THIS LESSON (legacy approach)
+      const sets = await QuizSet.findAll({ where: { lesson_id: lessonId } });
 
-    const sets = await QuizSet.findAll({ where: { lesson_id: lessonId } });
-    if (sets.length === 0) {
-      return res.status(404).json({ success: false, message: 'No quiz set found for this lesson' });
+      if (sets.length > 0) {
+        // Logic cũ: tìm qua QuizSet
+        const targetSet = sets[0];
+        quizzes = await Quiz.findAll({ where: { quiz_set_id: targetSet.id } });
+      } else {
+        // FALLBACK: Tìm trực tiếp bằng lesson_id (giống logic ở getQuizzesByLesson)
+        quizzes = await Quiz.findAll({ where: { lesson_id: lessonId } });
+      }
     }
-    const targetSet = sets[0]; // Assume 1 active set per lesson or take latest
-
-    const quizzes = await Quiz.findAll({ where: { quiz_set_id: targetSet.id } });
 
     if (quizzes.length === 0) {
-      return res.status(404).json({ success: false, message: 'No questions found' });
+      return res.status(404).json({ success: false, message: 'No questions found for this lesson' });
     }
 
     // Check answers logic...
@@ -212,9 +221,13 @@ export const submitQuiz = async (req, res) => {
       const quiz = quizzes.find(q => q.id === submitted.quizId);
       if (!quiz) return { quizId: submitted.quizId, correct: false };
 
-      const isCorrect = quiz.correct_answer === String(submitted.answer);
+      const submittedAnswer = String(submitted.answer || '').trim();
+      const correctAnswer = String(quiz.correct_answer || '').trim();
+
+      const isCorrect = correctAnswer === submittedAnswer;
+
       if (isCorrect) correctCount++;
-      return { quizId: submitted.quizId, correct: isCorrect, correctAnswer: quiz.correct_answer, submitted: String(submitted.answer) };
+      return { quizId: submitted.quizId, correct: isCorrect, correctAnswer: quiz.correct_answer, submitted: submittedAnswer };
     });
 
     const score = Math.round((correctCount / quizzes.length) * 100);
