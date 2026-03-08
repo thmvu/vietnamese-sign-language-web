@@ -4,9 +4,9 @@ import numpy as np
 import tensorflow as tf
 
 # Number of frames per sequence (must match model training)
-SEQUENCE_LENGTH = 100
-# Features per frame: 21 landmarks × 2 (x, y only) = 42  ← confirmed by model input shape
-FEATURES_PER_FRAME = 42
+SEQUENCE_LENGTH = 60
+# Features per frame: 201 — must match final_model.keras input shape (None, 60, 201)
+FEATURES_PER_FRAME = 201
 
 
 class SignLanguageInference:
