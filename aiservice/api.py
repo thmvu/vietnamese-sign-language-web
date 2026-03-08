@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 inference_engine = SignLanguageInference(
-    model_path='model/final_model.keras',
+    model_path='model/gesture_embedding_model.keras',
     dictionary_path='model/gesture_dictionary.npz'
 )
 

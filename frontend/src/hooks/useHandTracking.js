@@ -14,53 +14,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
  * @param {boolean}         isActive
  */
 
-const MODEL_SEQUENCE_LENGTH = 60;  // khớp với final_model.keras input shape (None, 60, 201)
-const ZEROS_201 = Array(201).fill(0);   // placeholder khi không phát hiện tay
-const ZEROS_42 = Array(42).fill(0);     // legacy placeholder
+const MODEL_SEQUENCE_LENGTH = 100;
+const ZEROS_42 = Array(42).fill(0);   // placeholder khi không phát hiện tay
 
-/**
- * Tạo 201-feature vector từ 21 landmarks (x, y, z) theo cách model mới được train:
- * - 63 features: xyz normalized (21 × 3)
- * - 138 features: khoảng cách giữa các cặp landmark đặc trưng
- * Tổng = 63 + 138 = 201
- */
-function extractFeatures201(hand) {
-    // 1. Lấy xyz của 21 landmarks (MediaPipe cung cấp x, y, z)
-    const coords = hand.map(lm => [lm.x, lm.y, lm.z ?? 0.0]);
-
-    // 2. Normalize: trừ centroid, chia max_dist
-    const cx = coords.reduce((s, c) => s + c[0], 0) / 21;
-    const cy = coords.reduce((s, c) => s + c[1], 0) / 21;
-    const cz = coords.reduce((s, c) => s + c[2], 0) / 21;
-    const centered = coords.map(([x, y, z]) => [x - cx, y - cy, z - cz]);
-    const maxDist = Math.max(...centered.map(([x, y, z]) => Math.sqrt(x * x + y * y + z * z)));
-    const normalized = maxDist > 0
-        ? centered.map(([x, y, z]) => [x / maxDist, y / maxDist, z / maxDist])
-        : centered;
-
-    // 3. Flatten xyz → 63 features
-    const xyzFeatures = normalized.flat();
-
-    // 4. Pairwise distances giữa các cặp landmark → 138 features
-    // Chọn 138 cặp: dùng vòng lặp i<j với tối đa 138 cặp đầu tiên
-    const distances = [];
-    outer: for (let i = 0; i < 21; i++) {
-        for (let j = i + 1; j < 21; j++) {
-            const dx = normalized[i][0] - normalized[j][0];
-            const dy = normalized[i][1] - normalized[j][1];
-            const dz = normalized[i][2] - normalized[j][2];
-            distances.push(Math.sqrt(dx * dx + dy * dy + dz * dz));
-            if (distances.length >= 138) break outer;
-        }
-    }
-
-    // Pad nếu thiếu
-    while (distances.length < 138) distances.push(0.0);
-
-    return [...xyzFeatures, ...distances]; // 63 + 138 = 201
-}
-
-/** Flatten 21 landmarks [[x,y], ...] → [x0,y0, x1,y1, ...] (42 giá trị) — legacy */
+/** Flatten 21 landmarks [[x,y], ...] → [x0,y0, x1,y1, ...] (42 giá trị) */
 function flattenLandmarks(hand) {
     return hand.flatMap(lm => [lm.x, lm.y]);
 }
@@ -128,9 +85,8 @@ export function useHandTracking(videoRef, canvasRef, isActive) {
                 primaryFeatures = flattenLandmarks(results.multiHandLandmarks[0]);
             }
 
-            // frame = 201 features [x0,y0,z0,...,x20,y20,z20, dist01, dist02, ...]
-            // Khớp với final_model.keras input shape (None, 60, 201)
-            const frameFeatures = extractFeatures201(results.multiHandLandmarks[0]);
+            // frame = 42 features [x0,y0,...,x20,y20] — khớp model cũ (None,100,42)
+            const frameFeatures = primaryFeatures;
 
             setLandmarks(results.multiHandLandmarks[0].map(lm => [lm.x, lm.y, lm.z]));
             setIsDetected(true);
