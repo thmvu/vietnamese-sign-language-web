@@ -85,7 +85,7 @@ export function useHandTracking(videoRef, canvasRef, isActive) {
                 primaryFeatures = flattenLandmarks(results.multiHandLandmarks[0]);
             }
 
-            // frame = 42 features [x0,y0,...,x20,y20] — khớp model input (None,100,42)
+            // frame = 42 features [x0,y0,...,x20,y20] — khớp model cũ (None,100,42)
             const frameFeatures = primaryFeatures;
 
             setLandmarks(results.multiHandLandmarks[0].map(lm => [lm.x, lm.y, lm.z]));

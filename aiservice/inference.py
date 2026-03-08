@@ -5,7 +5,7 @@ import tensorflow as tf
 
 # Number of frames per sequence (must match model training)
 SEQUENCE_LENGTH = 100
-# Features per frame: 21 landmarks × 2 (x, y only) = 42  ← confirmed by model input shape
+# Features per frame: 21 landmarks × 2 (x, y only) = 42
 FEATURES_PER_FRAME = 42
 
 

@@ -239,18 +239,25 @@ export const saveProgress = async (progressData) => {
  * @param {Array} frames - mảng 100 frame, mỗi frame là mảng 21 landmarks [[x,y], ...]
  */
 export const evaluatePractice = async (frames) => {
-  const response = await aiApi.post('/predict', { frames });
-  // aiApi trả về response.data trực tiếp
-  return {
-    success: true,
-    data: {
-      predicted_sign: response.data.predicted_sign,
-      confidence: response.data.confidence,
-      feedback: response.data.confidence > 0.75
-        ? 'Xuất sắc! Ký hiệu của bạn rất chính xác.'
-        : 'Thử lại nhé! Điều chỉnh tư thế tay cho đúng hơn.'
-    }
-  };
+  console.log(`[AI Debug] Sending ${frames.length} frames, each has ${frames[0]?.length} features`);
+  try {
+    const response = await aiApi.post('/predict', { frames });
+    console.log('[AI Debug] Raw response:', response);
+    return {
+      success: true,
+      data: {
+        predicted_sign: response.data.predicted_sign,
+        confidence: response.data.confidence,
+        feedback: response.data.confidence > 0.75
+          ? 'Xuất sắc! Ký hiệu của bạn rất chính xác.'
+          : 'Thử lại nhé! Điều chỉnh tư thế tay cho đúng hơn.'
+      }
+    };
+  } catch (err) {
+    console.error('[AI Debug] Error detail:', err.response?.data);
+    console.error('[AI Debug] Status:', err.response?.status);
+    throw err;
+  }
 };
 
 /** Kiểm tra Python AI Service có sẵn sàng không */
