@@ -31,8 +31,8 @@ export const chat = async (req, res) => {
     // Fetch conversation history from DB for Gemini context
     const fullHistory = await ChatMessage.findAllByUserId(user_id);
 
-    // Using gemini-flash-latest which is verified to work with the current quota
-    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+    // Using gemini-2.5-flash which is the latest stable version
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const instructions = `Bạn là trợ lý AI cho website học Ngôn ngữ Ký hiệu Việt Nam.
 Trả lời ngắn gọn, dễ hiểu, thân thiện. 

@@ -11,15 +11,15 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: 'node_modules/@mediapipe/hands/**/*',
+          src: '../node_modules/@mediapipe/hands/**/*',
           dest: 'mediapipe/hands',
         },
         {
-          src: 'node_modules/@mediapipe/camera_utils/**/*',
+          src: '../node_modules/@mediapipe/camera_utils/**/*',
           dest: 'mediapipe/camera_utils',
         },
         {
-          src: 'node_modules/@mediapipe/drawing_utils/**/*',
+          src: '../node_modules/@mediapipe/drawing_utils/**/*',
           dest: 'mediapipe/drawing_utils',
         },
       ],
